@@ -116,6 +116,20 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     partial void OnIsHexModeChanged(bool value)
     {
         portManager.DataType = value ? SerialDataType.Hex : SerialDataType.Ascii;
+        OnPropertyChanged(nameof(IsAsciiMode));
+    }
+
+    /// <summary>
+    /// The other half of the ASCII / HEX pair. A negated binding on the radio
+    /// button would not write back, so the inverse is a real property.
+    /// </summary>
+    public bool IsAsciiMode
+    {
+        get => !IsHexMode;
+        set
+        {
+            if (value) IsHexMode = false;
+        }
     }
 
     /// <summary>Append CR to each sent command.</summary>

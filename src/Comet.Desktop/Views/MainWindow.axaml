@@ -7,6 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1120" d:DesignHeight="640"
         x:Class="Comet.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
+        Icon="/Assets/comet.ico"
         Title="{Binding Title}"
         Width="1120" Height="640"
         MinWidth="820" MinHeight="480">
@@ -114,7 +115,7 @@
 
                     <TextBlock Classes="section" Text="BAUD RATE" />
                     <AutoCompleteBox ItemsSource="{Binding BaudRates}"
-                                     Text="{Binding SelectedBaudRate}"
+                                     Text="{Binding SelectedBaudRate, Mode=TwoWay}"
                                      IsEnabled="{Binding CanEditPortSettings}"
                                      FilterMode="StartsWith"
                                      MinimumPrefixLength="0"
@@ -140,9 +141,9 @@
                     <TextBlock Classes="section" Text="DATA" />
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <RadioButton GroupName="datatype" Content="ASCII" FontSize="11"
-                                     IsChecked="{Binding !IsHexMode}" />
+                                     IsChecked="{Binding IsAsciiMode, Mode=TwoWay}" />
                         <RadioButton GroupName="datatype" Content="HEX" FontSize="11"
-                                     IsChecked="{Binding IsHexMode}" />
+                                     IsChecked="{Binding IsHexMode, Mode=TwoWay}" />
                     </StackPanel>
 
                     <TextBlock Classes="section" Text="LINE ENDING (WRITE)" />
