@@ -10,7 +10,7 @@
         Icon="/Assets/comet.ico"
         Title="{Binding Title}"
         Width="1060" Height="640"
-        MinWidth="860" MinHeight="500">
+        MinWidth="880" MinHeight="500">
 
     <Design.DataContext>
         <vm:MainViewModel />
@@ -57,10 +57,7 @@
 
         <!-- Header -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-            <StackPanel Grid.Column="0" Spacing="1">
-                <TextBlock Classes="appTitle" Text="COMET" />
-                <TextBlock Classes="appSubtitle" Text="Every command becomes a button" />
-            </StackPanel>
+            <TextBlock Grid.Column="0" Classes="appTitle" Text="COMET" VerticalAlignment="Center" />
 
             <Border Grid.Column="1" Classes="headerChip" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="5">
@@ -83,222 +80,223 @@
             </Grid>
         </Border>
 
-        <!-- Body -->
-        <Grid Grid.Row="2" ColumnDefinitions="176,14,*,14,224">
+        <!--
+            The three columns share one row grid rather than nesting their own,
+            so the action row at the foot lines up exactly across them: OPEN PORT
+            sits on the same baseline as the command bar beside it.
+        -->
+        <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto" ColumnDefinitions="176,14,*,14,240">
 
-            <!-- PORT -->
-            <Grid Grid.Column="0" RowDefinitions="Auto,*">
-                <TextBlock Grid.Row="0" Classes="section" Text="PORT" Margin="2,0,0,6" />
-                <Border Grid.Row="1" Classes="panel" Padding="8,10">
-                    <ScrollViewer>
-                        <StackPanel Spacing="7">
+            <!-- Column headings -->
+            <TextBlock Grid.Row="0" Grid.Column="0" Classes="section" Text="PORT" Margin="2,0,0,6" />
 
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="DEVICE" />
-                                <ComboBox ItemsSource="{Binding Ports}"
-                                          SelectedItem="{Binding SelectedPort}"
-                                          IsEnabled="{Binding CanEditPortSettings}"
-                                          ToolTip.Tip="{Binding SelectedPort.DeviceName}">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="core:SerialPortInfo">
-                                            <TextBlock Text="{Binding ShortName}" FontSize="11"
-                                                       TextTrimming="CharacterEllipsis" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
+            <Grid Grid.Row="0" Grid.Column="2" ColumnDefinitions="Auto,*,Auto" Margin="2,0,0,6">
+                <TextBlock Grid.Column="0" Classes="section" Text="TERMINAL" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Content="CLEAR" Command="{Binding ClearTerminalCommand}" />
+            </Grid>
 
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="BAUD" />
-                                <AutoCompleteBox ItemsSource="{Binding BaudRates}"
-                                                 Text="{Binding SelectedBaudRate, Mode=TwoWay}"
-                                                 IsEnabled="{Binding CanEditPortSettings}"
-                                                 FilterMode="StartsWith"
-                                                 MinimumPrefixLength="0"
-                                                 ToolTip.Tip="Pick a standard rate or type any value" />
-                            </StackPanel>
+            <Grid Grid.Row="0" Grid.Column="4" ColumnDefinitions="Auto,*,Auto,4,Auto,4,Auto" Margin="2,0,0,6">
+                <TextBlock Grid.Column="0" Classes="section" Text="HISTORY" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Content="LABELS" Command="{Binding ToggleButtonLabelsCommand}"
+                        ToolTip.Tip="Swap between the command and its description" />
+                <Button Grid.Column="4" Content="CLEAR" Command="{Binding ClearHistoryCommand}" />
+                <ToggleButton Grid.Column="6" Classes="chip view compact" Content="REC"
+                              IsChecked="{Binding RecordHistory, Mode=TwoWay}"
+                              ToolTip.Tip="Add each sent command to this pane" />
+            </Grid>
 
-                            <Grid ColumnDefinitions="*,6,*">
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="fieldLabel" Text="DATA" />
-                                    <ComboBox ItemsSource="{Binding DataBitsOptions}"
-                                              SelectedItem="{Binding SelectedDataBits}"
-                                              IsEnabled="{Binding CanEditPortSettings}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Classes="fieldLabel" Text="STOP" />
-                                    <ComboBox ItemsSource="{Binding StopBitsOptions}"
-                                              SelectedItem="{Binding SelectedStopBits}"
-                                              IsEnabled="{Binding CanEditPortSettings}" />
-                                </StackPanel>
-                            </Grid>
+            <!-- Port settings -->
+            <Border Grid.Row="1" Grid.Column="0" Classes="panel" Padding="8,10">
+                <ScrollViewer>
+                    <StackPanel Spacing="7">
 
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="PARITY" />
-                                <ComboBox ItemsSource="{Binding ParityOptions}"
-                                          SelectedItem="{Binding SelectedParity}"
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="DEVICE" />
+                            <ComboBox ItemsSource="{Binding Ports}"
+                                      SelectedItem="{Binding SelectedPort}"
+                                      IsEnabled="{Binding CanEditPortSettings}"
+                                      ToolTip.Tip="{Binding SelectedPort.DeviceName}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="core:SerialPortInfo">
+                                        <TextBlock Text="{Binding ShortName}" FontSize="11"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="BAUD" />
+                            <AutoCompleteBox ItemsSource="{Binding BaudRates}"
+                                             Text="{Binding SelectedBaudRate, Mode=TwoWay}"
+                                             IsEnabled="{Binding CanEditPortSettings}"
+                                             FilterMode="StartsWith"
+                                             MinimumPrefixLength="0"
+                                             ToolTip.Tip="Pick a standard rate or type any value" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,6,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="DATA" />
+                                <ComboBox ItemsSource="{Binding DataBitsOptions}"
+                                          SelectedItem="{Binding SelectedDataBits}"
                                           IsEnabled="{Binding CanEditPortSettings}" />
                             </StackPanel>
-
-                            <Button Classes="primary"
-                                    Classes.live="{Binding IsPortOpen}"
-                                    Content="{Binding OpenCloseLabel}"
-                                    Command="{Binding TogglePortCommand}"
-                                    Margin="0,2,0,0" />
-
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="FORMAT" />
-                                <Grid ColumnDefinitions="*,3,*">
-                                    <ToggleButton Grid.Column="0" Classes="chip" Content="ASCII"
-                                                  IsChecked="{Binding IsAsciiMode, Mode=TwoWay}" />
-                                    <ToggleButton Grid.Column="2" Classes="chip" Content="HEX"
-                                                  IsChecked="{Binding IsHexMode, Mode=TwoWay}" />
-                                </Grid>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="fieldLabel" Text="STOP" />
+                                <ComboBox ItemsSource="{Binding StopBitsOptions}"
+                                          SelectedItem="{Binding SelectedStopBits}"
+                                          IsEnabled="{Binding CanEditPortSettings}" />
                             </StackPanel>
+                        </Grid>
 
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="WRITE ENDING" />
-                                <Grid ColumnDefinitions="*,3,*">
-                                    <ToggleButton Grid.Column="0" Classes="chip" Content="CR"
-                                                  IsChecked="{Binding WriteCr, Mode=TwoWay}" />
-                                    <ToggleButton Grid.Column="2" Classes="chip" Content="NL"
-                                                  IsChecked="{Binding WriteNl, Mode=TwoWay}" />
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="CONTROL LINES" />
-                                <Grid ColumnDefinitions="*,3,*,3,*">
-                                    <ToggleButton Grid.Column="0" Classes="chip line" Content="DTR"
-                                                  IsChecked="{Binding DtrEnabled, Mode=TwoWay}" />
-                                    <ToggleButton Grid.Column="2" Classes="chip line" Content="RTS"
-                                                  IsChecked="{Binding RtsEnabled, Mode=TwoWay}" />
-                                    <Button Grid.Column="4" Content="BRK"
-                                            Command="{Binding SendBreakCommand}"
-                                            ToolTip.Tip="Send break" />
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="DISPLAY" />
-                                <Grid ColumnDefinitions="*,3,*">
-                                    <ToggleButton Grid.Column="0" Classes="chip view" Content="CR/NL"
-                                                  IsChecked="{Binding AddNewLineToTerminal, Mode=TwoWay}"
-                                                  ToolTip.Tip="Put each received message on its own line" />
-                                    <ToggleButton Grid.Column="2" Classes="chip view" Content="SPACES"
-                                                  IsChecked="{Binding ByteSpaces, Mode=TwoWay}"
-                                                  ToolTip.Tip="Space between bytes in HEX mode" />
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel>
-                                <TextBlock Classes="fieldLabel" Text="TIMESTAMP" />
-                                <Grid ColumnDefinitions="46,4,*">
-                                    <ToggleButton Grid.Column="0" Classes="chip view" Content="ON"
-                                                  IsChecked="{Binding TimestampEnabled, Mode=TwoWay}"
-                                                  ToolTip.Tip="Prefix each line with the time" />
-                                    <TextBox Grid.Column="2" Classes="readout" Text="{Binding TimestampFormat}"
-                                             IsEnabled="{Binding TimestampEnabled}" />
-                                </Grid>
-                            </StackPanel>
-
-                            <Grid ColumnDefinitions="*,6,*">
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="fieldLabel" Text="WRITE MS" />
-                                    <TextBox Classes="readout" Text="{Binding TimeoutText}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Classes="fieldLabel" Text="IDLE MS" />
-                                    <TextBox Classes="readout" Text="{Binding ReadTimeoutText}" />
-                                </StackPanel>
-                            </Grid>
-
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="PARITY" />
+                            <ComboBox ItemsSource="{Binding ParityOptions}"
+                                      SelectedItem="{Binding SelectedParity}"
+                                      IsEnabled="{Binding CanEditPortSettings}" />
                         </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="FORMAT" />
+                            <Grid ColumnDefinitions="*,3,*">
+                                <ToggleButton Grid.Column="0" Classes="chip" Content="ASCII"
+                                              IsChecked="{Binding IsAsciiMode, Mode=TwoWay}" />
+                                <ToggleButton Grid.Column="2" Classes="chip" Content="HEX"
+                                              IsChecked="{Binding IsHexMode, Mode=TwoWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="WRITE ENDING" />
+                            <Grid ColumnDefinitions="*,3,*">
+                                <ToggleButton Grid.Column="0" Classes="chip" Content="CR"
+                                              IsChecked="{Binding WriteCr, Mode=TwoWay}" />
+                                <ToggleButton Grid.Column="2" Classes="chip" Content="NL"
+                                              IsChecked="{Binding WriteNl, Mode=TwoWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="CONTROL LINES" />
+                            <Grid ColumnDefinitions="*,3,*,3,*">
+                                <ToggleButton Grid.Column="0" Classes="chip line" Content="DTR"
+                                              IsChecked="{Binding DtrEnabled, Mode=TwoWay}" />
+                                <ToggleButton Grid.Column="2" Classes="chip line" Content="RTS"
+                                              IsChecked="{Binding RtsEnabled, Mode=TwoWay}" />
+                                <Button Grid.Column="4" Content="BRK"
+                                        Command="{Binding SendBreakCommand}"
+                                        ToolTip.Tip="Send break" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="DISPLAY" />
+                            <Grid ColumnDefinitions="*,3,*">
+                                <ToggleButton Grid.Column="0" Classes="chip view" Content="CR/NL"
+                                              IsChecked="{Binding AddNewLineToTerminal, Mode=TwoWay}"
+                                              ToolTip.Tip="Put each received message on its own line" />
+                                <ToggleButton Grid.Column="2" Classes="chip view" Content="SPACES"
+                                              IsChecked="{Binding ByteSpaces, Mode=TwoWay}"
+                                              ToolTip.Tip="Space between bytes in HEX mode" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="TIMESTAMP" />
+                            <Grid ColumnDefinitions="46,4,*">
+                                <ToggleButton Grid.Column="0" Classes="chip view" Content="ON"
+                                              IsChecked="{Binding TimestampEnabled, Mode=TwoWay}"
+                                              ToolTip.Tip="Prefix each line with the time" />
+                                <TextBox Grid.Column="2" Classes="readout" Text="{Binding TimestampFormat}"
+                                         IsEnabled="{Binding TimestampEnabled}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,6,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="WRITE MS" />
+                                <TextBox Classes="readout" Text="{Binding TimeoutText}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="fieldLabel" Text="IDLE MS" />
+                                <TextBox Classes="readout" Text="{Binding ReadTimeoutText}" />
+                            </StackPanel>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- The port's action, on the command bar's baseline. -->
+            <Button Grid.Row="2" Grid.Column="0" Classes="primary"
+                    Classes.live="{Binding IsPortOpen}"
+                    Content="{Binding OpenCloseLabel}"
+                    Command="{Binding TogglePortCommand}"
+                    VerticalAlignment="Stretch"
+                    Margin="0,8,0,0" />
+
+            <!-- Terminal -->
+            <Border Grid.Row="1" Grid.Column="2" Classes="well" ClipToBounds="True">
+                <ScrollViewer x:Name="TerminalScroll" Padding="10,8">
+                    <SelectableTextBlock x:Name="Terminal"
+                                         FontFamily="{DynamicResource FontMono}"
+                                         FontSize="11.5"
+                                         TextWrapping="Wrap"
+                                         Foreground="{DynamicResource TerminalReceive}"
+                                         SelectionBrush="#2A5C6E" />
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Row="2" Grid.Column="2" ColumnDefinitions="*,6,Auto" Margin="0,8,0,0">
+                <TextBox x:Name="InputBox" Grid.Column="0" Classes="command"
+                         Text="{Binding InputText}"
+                         PlaceholderText="Type a command, press Return to send"
+                         KeyDown="OnInputKeyDown" />
+                <Button Grid.Column="2" Classes="primary" Content="SEND" Width="66"
+                        Command="{Binding SendCommand}" VerticalAlignment="Stretch" />
+            </Grid>
+
+            <!-- History, running the full height beside both rows. -->
+            <Border Grid.Row="1" Grid.RowSpan="2" Grid.Column="4" Classes="panel" Padding="7,8">
+                <Grid>
+                    <!-- Shown until the pane has something in it. -->
+                    <TextBlock Classes="appSubtitle"
+                               Text="Commands you send appear here.&#10;Drop a .txt command file to load a set."
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               Margin="10"
+                               IsVisible="{Binding !History.Count}" />
+
+                    <ScrollViewer x:Name="HistoryScroll">
+                        <ItemsControl ItemsSource="{Binding History}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="core:CommandEntry">
+                                    <Button Classes="history"
+                                            Classes.alt="{Binding IsAlternateStyle}"
+                                            Classes.script="{Binding IsScript}"
+                                            Content="{Binding DisplayText}"
+                                            ToolTip.Tip="{Binding TooltipText}"
+                                            Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SendEntryCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Button.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Copy to Input"
+                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).EditEntryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                                <MenuItem Header="Remove"
+                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RemoveEntryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </ScrollViewer>
-                </Border>
-            </Grid>
-
-            <!-- TERMINAL -->
-            <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="2,0,0,6">
-                    <TextBlock Grid.Column="0" Classes="section" Text="TERMINAL" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Content="CLEAR" Command="{Binding ClearTerminalCommand}" />
                 </Grid>
-
-                <Border Grid.Row="1" Classes="well" ClipToBounds="True">
-                    <ScrollViewer x:Name="TerminalScroll" Padding="10,8">
-                        <SelectableTextBlock x:Name="Terminal"
-                                             FontFamily="{DynamicResource FontMono}"
-                                             FontSize="11.5"
-                                             TextWrapping="Wrap"
-                                             Foreground="{DynamicResource TerminalReceive}"
-                                             SelectionBrush="#2A5C6E" />
-                    </ScrollViewer>
-                </Border>
-
-                <Grid Grid.Row="2" ColumnDefinitions="*,6,Auto,6,Auto" Margin="0,8,0,0">
-                    <TextBox x:Name="InputBox" Grid.Column="0" Classes="command"
-                             Text="{Binding InputText}"
-                             PlaceholderText="Type a command, press Return to send"
-                             KeyDown="OnInputKeyDown" />
-                    <Button Grid.Column="2" Classes="primary" Content="SEND" Width="66"
-                            Command="{Binding SendCommand}" VerticalAlignment="Stretch" />
-                    <ToggleButton Grid.Column="4" Classes="chip view" Content="REC" Width="44"
-                                  VerticalAlignment="Stretch"
-                                  IsChecked="{Binding RecordHistory, Mode=TwoWay}"
-                                  ToolTip.Tip="Add each sent command to the history pane" />
-                </Grid>
-            </Grid>
-
-            <!-- HISTORY -->
-            <Grid Grid.Column="4" RowDefinitions="Auto,*">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,4,Auto" Margin="2,0,0,6">
-                    <TextBlock Grid.Column="0" Classes="section" Text="HISTORY" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Content="LABELS" Command="{Binding ToggleButtonLabelsCommand}"
-                            ToolTip.Tip="Swap between the command and its description" />
-                    <Button Grid.Column="4" Content="CLEAR" Command="{Binding ClearHistoryCommand}" />
-                </Grid>
-
-                <Border Grid.Row="1" Classes="panel" Padding="7,8">
-                    <Grid>
-                        <!-- Shown until the pane has something in it. -->
-                        <TextBlock Classes="appSubtitle"
-                                   Text="Commands you send appear here.&#10;Drop a .txt command file to load a set."
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Margin="10"
-                                   IsVisible="{Binding !History.Count}" />
-
-                        <ScrollViewer x:Name="HistoryScroll">
-                            <ItemsControl ItemsSource="{Binding History}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="core:CommandEntry">
-                                        <Button Classes="history"
-                                                Classes.alt="{Binding IsAlternateStyle}"
-                                                Classes.script="{Binding IsScript}"
-                                                Content="{Binding DisplayText}"
-                                                ToolTip.Tip="{Binding TooltipText}"
-                                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SendEntryCommand}"
-                                                CommandParameter="{Binding}">
-                                            <Button.ContextMenu>
-                                                <ContextMenu>
-                                                    <MenuItem Header="Copy to Input"
-                                                              Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).EditEntryCommand}"
-                                                              CommandParameter="{Binding}" />
-                                                    <MenuItem Header="Remove"
-                                                              Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RemoveEntryCommand}"
-                                                              CommandParameter="{Binding}" />
-                                                </ContextMenu>
-                                            </Button.ContextMenu>
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
-                </Border>
-            </Grid>
+            </Border>
         </Grid>
 
         <!-- Footer -->

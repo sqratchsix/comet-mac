@@ -334,6 +334,12 @@
         <Setter Property="TextBlock.Foreground" Value="White" />
     </Style>
 
+    <!-- A chip sitting in a section header, sized like the buttons beside it. -->
+    <Style Selector="ToggleButton.chip.compact">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Padding" Value="8,4" />
+    </Style>
+
     <Style Selector="ToggleButton.chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="TextBlock.Foreground" Value="#3A3F47" />
     </Style>
