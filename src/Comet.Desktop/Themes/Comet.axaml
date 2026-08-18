@@ -1,0 +1,60 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Ported from mmyyxx's Theme.swift so the two apps read as a set: the same
+        near-black window, raised panels over recessed wells, hairline borders,
+        and a small tracked-uppercase label voice.
+    -->
+
+    <Color x:Key="WindowTopColor">#1B1E23</Color>
+    <Color x:Key="WindowBottomColor">#0E1014</Color>
+    <Color x:Key="PanelColor">#212429</Color>
+    <Color x:Key="PanelRaisedColor">#282C32</Color>
+    <Color x:Key="WellColor">#090B0E</Color>
+    <Color x:Key="AccentColor">#5AC8FA</Color>
+
+    <SolidColorBrush x:Key="Panel" Color="#212429" />
+    <SolidColorBrush x:Key="PanelRaised" Color="#282C32" />
+    <SolidColorBrush x:Key="Well" Color="#090B0E" />
+    <SolidColorBrush x:Key="Hairline" Color="#FFFFFF" Opacity="0.07" />
+    <SolidColorBrush x:Key="WellEdge" Color="#000000" Opacity="0.55" />
+
+    <SolidColorBrush x:Key="TextPrimary" Color="#E8EAEE" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#8A9099" />
+    <SolidColorBrush x:Key="TextTertiary" Color="#5C626B" />
+
+    <SolidColorBrush x:Key="Accent" Color="#5AC8FA" />
+    <SolidColorBrush x:Key="AccentDim" Color="#5AC8FA" Opacity="0.18" />
+    <SolidColorBrush x:Key="Danger" Color="#FF4D4D" />
+    <SolidColorBrush x:Key="MeterGreen" Color="#3DDC84" />
+    <SolidColorBrush x:Key="MeterLime" Color="#A8E05F" />
+    <SolidColorBrush x:Key="MeterAmber" Color="#F5C542" />
+
+    <!-- Terminal ink. Receive stays the meter green so it belongs to the palette. -->
+    <SolidColorBrush x:Key="TerminalReceive" Color="#3DDC84" />
+    <SolidColorBrush x:Key="TerminalSend" Color="#5AC8FA" />
+    <SolidColorBrush x:Key="TerminalSystem" Color="#F5C542" />
+
+    <LinearGradientBrush x:Key="WindowBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#1B1E23" />
+        <GradientStop Offset="1" Color="#0E1014" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PanelBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#282C32" />
+        <GradientStop Offset="1" Color="#212429" />
+    </LinearGradientBrush>
+
+    <!--
+        mmyyxx draws its labels in SF Rounded (design: .rounded). macOS hides
+        that family from font enumeration under a dot-prefixed name, so Avalonia
+        cannot resolve it and it is not redistributable in any case. Nunito is
+        the closest open face: the same humanist geometry with rounded terminals,
+        under SIL OFL 1.1, so it ships with the app and renders identically on
+        any machine.
+    -->
+    <FontFamily x:Key="FontUI">avares://Comet.Desktop/Assets/Fonts#Nunito</FontFamily>
+    <FontFamily x:Key="FontMono">Menlo, SF Mono, Monaco, monospace</FontFamily>
+
+</ResourceDictionary>

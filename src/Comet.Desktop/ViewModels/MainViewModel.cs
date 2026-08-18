@@ -37,8 +37,17 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public MainViewModel()
     {
         portManager.DataReceived += (_, data) => AppendToTerminal(data, true);
+        // The footer's command count and the empty-pane message both track this.
+        History.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HistorySummary));
+            OnPropertyChanged(nameof(HistoryCount));
+        };
         RefreshPorts();
     }
+
+    /// <summary>Bound by the history pane to swap in its placeholder text.</summary>
+    public int HistoryCount => History.Count;
 
     #region Port configuration
 
@@ -90,7 +99,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool IsPortOpen { get; set; }
 
-    public string OpenCloseLabel => IsPortOpen ? "Close Port" : "Open Port";
+    public string OpenCloseLabel => IsPortOpen ? "CLOSE PORT" : "OPEN PORT";
 
     /// <summary>Port settings can only be changed while the port is closed.</summary>
     public bool CanEditPortSettings => !IsPortOpen;
@@ -99,12 +108,20 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(OpenCloseLabel));
         OnPropertyChanged(nameof(CanEditPortSettings));
+        RefreshSummaries();
     }
 
     partial void OnSelectedPortChanged(SerialPortInfo? value)
     {
         UpdateTitle();
+        RefreshSummaries();
     }
+
+    partial void OnSelectedBaudRateChanged(string value) => RefreshSummaries();
+    partial void OnSelectedParityChanged(Parity value) => RefreshSummaries();
+    partial void OnSelectedDataBitsChanged(int value) => RefreshSummaries();
+    partial void OnSelectedStopBitsChanged(StopBits value) => RefreshSummaries();
+    partial void OnCurrentHistoryFileChanged(string? value) => RefreshSummaries();
 
     #endregion
 
@@ -117,6 +134,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         portManager.DataType = value ? SerialDataType.Hex : SerialDataType.Ascii;
         OnPropertyChanged(nameof(IsAsciiMode));
+        RefreshSummaries();
     }
 
     /// <summary>
@@ -200,6 +218,60 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     public partial string Title { get; set; } = "COMET";
+
+    /// <summary>Connection bar text: what is connected, or what would be.</summary>
+    public string ConnectionSummary
+    {
+        get
+        {
+            if (SelectedPort == null) return "No serial device found";
+            string where = string.IsNullOrEmpty(SelectedPort.Description)
+                ? SelectedPort.ShortName
+                : $"{SelectedPort.ShortName} → {SelectedPort.Description}";
+            return IsPortOpen ? where : $"{where}  ·  not open";
+        }
+    }
+
+    /// <summary>Footer: 115200 8N1.</summary>
+    public string LineSettingSummary
+    {
+        get
+        {
+            char parity = SelectedParity switch
+            {
+                Parity.None => 'N',
+                Parity.Odd => 'O',
+                Parity.Even => 'E',
+                Parity.Mark => 'M',
+                Parity.Space => 'S',
+                _ => 'N'
+            };
+            string stop = SelectedStopBits switch
+            {
+                StopBits.One => "1",
+                StopBits.OnePointFive => "1.5",
+                StopBits.Two => "2",
+                _ => "1"
+            };
+            return $"{SelectedBaudRate} {SelectedDataBits}{parity}{stop}";
+        }
+    }
+
+    public string FormatSummary => IsHexMode ? "HEX" : "ASCII";
+
+    public string HistorySummary => History.Count == 1 ? "1 command" : $"{History.Count} commands";
+
+    public string? CurrentHistoryFileName =>
+        string.IsNullOrEmpty(CurrentHistoryFile) ? null : Path.GetFileName(CurrentHistoryFile);
+
+    private void RefreshSummaries()
+    {
+        OnPropertyChanged(nameof(ConnectionSummary));
+        OnPropertyChanged(nameof(LineSettingSummary));
+        OnPropertyChanged(nameof(FormatSummary));
+        OnPropertyChanged(nameof(HistorySummary));
+        OnPropertyChanged(nameof(CurrentHistoryFileName));
+    }
 
     private void UpdateTitle()
     {
@@ -509,6 +581,40 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     #endregion
+
+    /// <summary>
+    /// Fills the window with representative content for the headless screenshot
+    /// tool, so the design can be reviewed against real text rather than an
+    /// empty shell. Not called by the app itself.
+    /// </summary>
+    public void LoadSampleContent()
+    {
+        foreach (var entry in new[]
+                 {
+                     new CommandEntry("AT", "AT"),
+                     new CommandEntry("AT+COPS?", "Current carrier", 1),
+                     new CommandEntry("AT+CSQ", "Signal quality", 1),
+                     new CommandEntry("AT+CFUN=1,1", "Restart module", 1),
+                     new CommandEntry("qdver", "Firmware version"),
+                     new CommandEntry("qdeeinfo", "Get all info"),
+                     new CommandEntry("Update Firmware", "Update Firmware", 2, CommandEntryType.ScriptRunner),
+                     new CommandEntry("sdboot", "sdboot"),
+                     new CommandEntry("sbl", "Stay in bootloader"),
+                 })
+        {
+            History.Add(entry);
+        }
+
+        AppendSystemMessage("Loaded 9 command(s) from raptor.ButtonA.txt");
+        TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
+            "AT+CSQ" + Environment.NewLine, TerminalTextKind.Sent));
+        TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
+            "+CSQ: 21,99" + Environment.NewLine + "OK" + Environment.NewLine, TerminalTextKind.Received));
+        TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
+            "qdver" + Environment.NewLine, TerminalTextKind.Sent));
+        TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
+            "RAPTOR v2.14.3  build 8821" + Environment.NewLine, TerminalTextKind.Received));
+    }
 
     public void Dispose()
     {

@@ -1,0 +1,496 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Control styles matching mmyyxx. Sizes, radii, tracking and padding are
+        taken from its SwiftUI sources rather than eyeballed, so the two apps
+        line up: Theme.swift for colour, ChannelStrip.ToggleChipStyle for the
+        chips, ContentView for the header, bars and footer.
+
+        The type scale is deliberately small — 7 to 13pt with a 17pt title.
+    -->
+
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource WindowBackground}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+    </Style>
+
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+    </Style>
+
+    <!-- Header: title 17 bold over a 10pt tertiary subtitle. -->
+    <Style Selector="TextBlock.appTitle">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <Style Selector="TextBlock.appSubtitle">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+
+    <!-- SOURCES / OUTPUTS in mmyyxx; PORT / TERMINAL / HISTORY here. -->
+    <Style Selector="TextBlock.section">
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="1.2" />
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+        <Setter Property="Margin" Value="2,0,0,0" />
+    </Style>
+
+    <!-- The 7pt label above a MiniSlider or beside a value. -->
+    <Style Selector="TextBlock.fieldLabel">
+        <Setter Property="FontSize" Value="7" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="0.5" />
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+        <Setter Property="Margin" Value="1,0,0,3" />
+    </Style>
+
+    <!-- A strip's name: 8pt semibold, tracked, secondary. -->
+    <Style Selector="TextBlock.stripLabel">
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="0.9" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+    </Style>
+
+    <!-- A strip's headline value: 13pt bold. -->
+    <Style Selector="TextBlock.stripValue">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <!-- Connection bar text: 11pt regular secondary. -->
+    <Style Selector="TextBlock.barText">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+    </Style>
+
+    <!-- Footer: 9pt medium tertiary, with · between items. -->
+    <Style Selector="TextBlock.footer">
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ============================ Surfaces =========================== -->
+
+    <!-- PanelBackground: gradient, hairline border, soft drop shadow. -->
+    <Style Selector="Border.panel">
+        <Setter Property="Background" Value="{DynamicResource PanelBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="BoxShadow" Value="0 3 8 0 #59000000" />
+    </Style>
+
+    <!-- WellBackground: dark fill inside a near-black edge. -->
+    <Style Selector="Border.well">
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="7" />
+    </Style>
+
+    <!-- The readout well under a fader is tighter: radius 4. -->
+    <Style Selector="Border.readoutWell">
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <!-- The header device picker: panelRaised, radius 7, 10/6 padding. -->
+    <Style Selector="Border.headerChip">
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <Style Selector="Border.headerChip TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <!-- Footer status chip: tint text on tint at 14%, radius 4. -->
+    <Style Selector="Border.statusChip">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,2" />
+    </Style>
+
+    <Style Selector="Border.statusChip TextBlock">
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="0.8" />
+    </Style>
+
+    <!-- ============================ Buttons ============================ -->
+
+    <Style Selector="Button">
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="0.5" />
+    </Style>
+
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextSecondary}" />
+    </Style>
+
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#31363E" />
+        <Setter Property="BorderBrush" Value="#26FFFFFF" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1E2229" />
+    </Style>
+
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="TextBlock.Foreground" Value="#3A3F47" />
+    </Style>
+
+    <!-- Full-width action, the MUTE footprint. -->
+    <Style Selector="Button.wide">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="8,5" />
+    </Style>
+
+    <!-- Open / Close port. Accent while closed, meter green once live. -->
+    <Style Selector="Button.primary">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="LetterSpacing" Value="0.9" />
+    </Style>
+
+    <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1A5AC8FA" />
+        <Setter Property="BorderBrush" Value="#E65AC8FA" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#2E5AC8FA" />
+        <Setter Property="TextBlock.Foreground" Value="#8FDCFC" />
+    </Style>
+
+    <Style Selector="Button.primary.live /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1A3DDC84" />
+        <Setter Property="BorderBrush" Value="#E63DDC84" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource MeterGreen}" />
+    </Style>
+
+    <Style Selector="Button.primary.live:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#2E3DDC84" />
+        <Setter Property="TextBlock.Foreground" Value="#79E9AB" />
+    </Style>
+
+    <!-- Borderless accent action, as in the connection bar. -->
+    <Style Selector="Button.link">
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="0" />
+    </Style>
+
+    <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="TextBlock.Foreground" Value="#8FDCFC" />
+    </Style>
+
+    <!-- History buttons: the command in mono, left aligned, full width. -->
+    <Style Selector="Button.history">
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="LetterSpacing" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="7,5" />
+        <Setter Property="Margin" Value="0,0,0,3" />
+    </Style>
+
+    <Style Selector="Button.history /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <!-- Alternating shade, driven by blank-line grouping in a command file. -->
+    <Style Selector="Button.history.alt /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Panel}" />
+    </Style>
+
+    <Style Selector="Button.history.script /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1A5AC8FA" />
+        <Setter Property="BorderBrush" Value="#665AC8FA" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="Button.history:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#31363E" />
+    </Style>
+
+    <!-- ======================== Toggle chips ========================= -->
+    <!--
+        ToggleChipStyle: radius 4, panelRaised when off with secondary text,
+        tint fill with white text and a soft glow when on.
+    -->
+
+    <Style Selector="ToggleButton.chip">
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="0.5" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="0,4" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextSecondary}" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#31363E" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderBrush" Value="#E65AC8FA" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+        <Setter Property="BoxShadow" Value="0 0 4 0 #665AC8FA" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#7AD4FB" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <!--
+        mmyyxx tints chips by what they do rather than using one colour for
+        everything: sends are accent, FX return is meter green, mute is danger.
+        The same split here — accent for what goes on the wire, green for what
+        only changes the view, amber for the hardware control lines.
+    -->
+    <Style Selector="ToggleButton.chip.view:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource MeterGreen}" />
+        <Setter Property="BorderBrush" Value="#E63DDC84" />
+        <Setter Property="BoxShadow" Value="0 0 4 0 #663DDC84" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip.view:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#5FE79E" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <!-- Control lines read as hardware state, so they light amber. -->
+    <Style Selector="ToggleButton.chip.line:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource MeterAmber}" />
+        <Setter Property="BorderBrush" Value="#E6F5C542" />
+        <Setter Property="BoxShadow" Value="0 0 4 0 #66F5C542" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip.line:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#FFD65E" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="ToggleButton.chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="TextBlock.Foreground" Value="#3A3F47" />
+    </Style>
+
+    <!-- ========================== Text fields ========================= -->
+
+    <Style Selector="TextBox">
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="SelectionBrush" Value="#2A5C6E" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <Style Selector="TextBox /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#33FFFFFF" />
+    </Style>
+
+    <!-- Numeric readout: mono, semibold, centred, tight. -->
+    <Style Selector="TextBox.readout">
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="2,3" />
+    </Style>
+
+    <!-- The command line: the one place the type gets bigger. -->
+    <Style Selector="TextBox.command">
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="9,6" />
+    </Style>
+
+    <!-- ============================ ComboBox =========================== -->
+
+    <Style Selector="ComboBox">
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="PlaceholderForeground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+
+    <Style Selector="ComboBox /template/ Border#Background">
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+        <Setter Property="Background" Value="#12161B" />
+        <Setter Property="BorderBrush" Value="#33FFFFFF" />
+    </Style>
+
+    <Style Selector="ComboBox:focus /template/ Border#Background">
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- ======================= AutoCompleteBox ======================== -->
+
+    <Style Selector="AutoCompleteBox">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource Well}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Its outer border would otherwise sit on top of the inner TextBox's. -->
+    <Style Selector="AutoCompleteBox /template/ Border#PART_BorderElement">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="AutoCompleteBox /template/ TextBox#PART_TextBox">
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="2,3" />
+    </Style>
+
+    <!-- ============================ ScrollBar ========================== -->
+
+    <Style Selector="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ScrollBar /template/ Border#Root">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ScrollBar /template/ Thumb">
+        <Setter Property="Background" Value="#33FFFFFF" />
+    </Style>
+
+    <!-- ============================ ToolTip =========================== -->
+
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="#0B0E12" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="Padding" Value="7,4" />
+    </Style>
+
+    <!-- ========================= Context menu ========================= -->
+
+    <Style Selector="ContextMenu">
+        <Setter Property="Background" Value="#171A1F" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="MenuItem">
+        <Setter Property="FontFamily" Value="{DynamicResource FontUI}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+</Styles>

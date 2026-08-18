@@ -9,6 +9,14 @@ The original is a .NET Framework 4.8 WinForms application and runs on Windows on
 This is a rewrite of the UI in [Avalonia](https://avaloniaui.net) on .NET 10, with the
 serial and file logic ported across. It builds a native Apple Silicon `.app`.
 
+<img src="docs/comet.png" alt="COMET: port settings, a colour-coded terminal, and the history button pane" width="880">
+
+The interface follows the same design language as
+[mmyyxx](https://github.com/sqratchsix/mmyyxx) — raised panels over recessed
+wells, hairline borders, small tracked-uppercase labels, and chips tinted by
+what they do: accent for what goes on the wire, green for what only changes the
+view, amber for the hardware control lines.
+
 ## Building
 
 Requires the .NET 10 SDK. If `dotnet` is not on your path:
@@ -40,13 +48,22 @@ cannot get one.
 ## Layout
 
 ```
-src/Comet.Core       Serial I/O, port discovery, data formatting, history file format.
-                     No UI dependencies, no platform-specific code beyond the macOS
-                     port enumerator.
-src/Comet.Desktop    Avalonia UI: the main window, its view model, the app bundle entry point.
-tests/               xUnit tests, including serial round trips over a pseudo terminal.
-scripts/build-app.sh Publishes and assembles COMET.app.
-build/               Info.plist and the app icon; build output lands here too.
+src/Comet.Core             Serial I/O, port discovery, data formatting, history file
+                           format. No UI dependencies, no platform-specific code beyond
+                           the macOS port enumerator.
+src/Comet.Desktop          Avalonia UI: main window, view model, app bundle entry point.
+src/Comet.Desktop/Themes   Colour tokens and control styles.
+tests/                     xUnit tests, including serial round trips over a pseudo terminal.
+tools/Comet.Shot           Renders the window off screen to a PNG. Used to review the
+                           design without a display and to regenerate the screenshot.
+scripts/build-app.sh       Publishes and assembles COMET.app.
+build/                     Info.plist and the app icon; build output lands here too.
+```
+
+Regenerate the screenshot with:
+
+```bash
+dotnet run --project tools/Comet.Shot -- docs/comet.png
 ```
 
 ## What changed in the port
@@ -86,6 +103,17 @@ Two deliberate behaviour changes:
 - **Text encoding.** ASCII mode decodes as Latin-1 rather than 7-bit ASCII, so bytes
   above 0x7F show as characters instead of turning into `?`. The two are identical for
   0x00–0x7F.
+
+## Typeface
+
+mmyyxx draws its labels in SF Rounded (`design: .rounded`). macOS hides that
+family from font enumeration behind a dot-prefixed name, so Avalonia cannot
+resolve it, and it is not redistributable in any case. The app ships
+[Nunito](https://github.com/googlefonts/nunito) instead — the same humanist
+geometry with rounded terminals, under SIL OFL 1.1, so it renders identically on
+any machine. The five static weights in `src/Comet.Desktop/Assets/Fonts` were
+instanced from the upstream variable font, since Avalonia applies weights from
+named faces rather than a variable axis. The licence sits beside them.
 
 ## History file format
 
