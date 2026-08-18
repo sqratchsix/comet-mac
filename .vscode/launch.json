@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run COMET",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Comet.Desktop/bin/Debug/net10.0/Comet.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Comet.Desktop",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

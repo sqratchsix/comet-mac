@@ -1,0 +1,277 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Comet.Desktop.ViewModels"
+        xmlns:core="using:Comet.Core"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1120" d:DesignHeight="640"
+        x:Class="Comet.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding Title}"
+        Width="1120" Height="640"
+        MinWidth="820" MinHeight="480">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="File">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Open History…" Gesture="Cmd+O" Click="OnOpenHistory" />
+                        <NativeMenuItem Header="Append History…" Click="OnAppendHistory" />
+                        <NativeMenuItem Header="Save History As…" Gesture="Cmd+S" Click="OnSaveHistory" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Reveal History File in Finder" Click="OnRevealHistoryFile" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="Terminal">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Clear Terminal" Gesture="Cmd+K" Command="{Binding ClearTerminalCommand}" />
+                        <NativeMenuItem Header="Send Break" Command="{Binding SendBreakCommand}" />
+                        <NativeMenuItem Header="Reset Buffer" Command="{Binding ResetBufferCommand}" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Refresh Ports" Gesture="Cmd+R" Command="{Binding RefreshPortsCommand}" />
+                        <NativeMenuItem Header="Open / Close Port" Gesture="Cmd+T" Command="{Binding TogglePortCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="History">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Toggle CMD / Description" Command="{Binding ToggleButtonLabelsCommand}" />
+                        <NativeMenuItem Header="Remove All Buttons" Command="{Binding ClearHistoryCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+        </NativeMenu>
+    </NativeMenu.Menu>
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="TerminalBackground" Color="#0B0B0B" />
+        <SolidColorBrush x:Key="TerminalReceive" Color="#00FF41" />
+        <SolidColorBrush x:Key="TerminalSend" Color="#00CED1" />
+        <SolidColorBrush x:Key="TerminalSystem" Color="#FFA23E" />
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.65" />
+            <Setter Property="Margin" Value="0,10,0,2" />
+        </Style>
+        <Style Selector="ComboBox, AutoCompleteBox, TextBox.field">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <!-- History buttons: left aligned, one line, alternating shade per file group. -->
+        <Style Selector="Button.history">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="FontFamily" Value="Menlo,Monaco,Courier New,monospace" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+        <Style Selector="Button.history.alt">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+        <Style Selector="Button.history.script">
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <Grid Grid.Row="0" ColumnDefinitions="200,Auto,*,Auto,240">
+
+            <!-- Port settings -->
+            <ScrollViewer Grid.Column="0" Padding="10,6,10,10">
+                <StackPanel>
+                    <TextBlock Classes="section" Text="PORT" Margin="0,0,0,2" />
+                    <ComboBox ItemsSource="{Binding Ports}"
+                              SelectedItem="{Binding SelectedPort}"
+                              IsEnabled="{Binding CanEditPortSettings}"
+                              ToolTip.Tip="{Binding SelectedPort.DeviceName}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="core:SerialPortInfo">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ShortName}" FontSize="12" />
+                                    <TextBlock Text="{Binding Description}" FontSize="10" Opacity="0.6"
+                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Button Content="Refresh Ports" Command="{Binding RefreshPortsCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            FontSize="11" Margin="0,0,0,6" />
+
+                    <TextBlock Classes="section" Text="BAUD RATE" />
+                    <AutoCompleteBox ItemsSource="{Binding BaudRates}"
+                                     Text="{Binding SelectedBaudRate}"
+                                     IsEnabled="{Binding CanEditPortSettings}"
+                                     FilterMode="StartsWith"
+                                     MinimumPrefixLength="0"
+                                     ToolTip.Tip="Pick a standard rate or type any value" />
+
+                    <TextBlock Classes="section" Text="PARITY" />
+                    <ComboBox ItemsSource="{Binding ParityOptions}" SelectedItem="{Binding SelectedParity}"
+                              IsEnabled="{Binding CanEditPortSettings}" />
+
+                    <TextBlock Classes="section" Text="DATA BITS" />
+                    <ComboBox ItemsSource="{Binding DataBitsOptions}" SelectedItem="{Binding SelectedDataBits}"
+                              IsEnabled="{Binding CanEditPortSettings}" />
+
+                    <TextBlock Classes="section" Text="STOP BITS" />
+                    <ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding SelectedStopBits}"
+                              IsEnabled="{Binding CanEditPortSettings}" />
+
+                    <Button Content="{Binding OpenCloseLabel}"
+                            Command="{Binding TogglePortCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Margin="0,12,0,4" Padding="0,6" />
+
+                    <TextBlock Classes="section" Text="DATA" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <RadioButton GroupName="datatype" Content="ASCII" FontSize="11"
+                                     IsChecked="{Binding !IsHexMode}" />
+                        <RadioButton GroupName="datatype" Content="HEX" FontSize="11"
+                                     IsChecked="{Binding IsHexMode}" />
+                    </StackPanel>
+
+                    <TextBlock Classes="section" Text="LINE ENDING (WRITE)" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <CheckBox Content="CR" FontSize="11" IsChecked="{Binding WriteCr}" />
+                        <CheckBox Content="NL" FontSize="11" IsChecked="{Binding WriteNl}" />
+                    </StackPanel>
+
+                    <CheckBox Content="Read CR/NL" FontSize="11" Margin="0,4,0,0"
+                              IsChecked="{Binding AddNewLineToTerminal}"
+                              ToolTip.Tip="Put each received message on its own line" />
+                    <CheckBox Content="Byte spaces (HEX)" FontSize="11"
+                              IsChecked="{Binding ByteSpaces}" />
+
+                    <TextBlock Classes="section" Text="TIMESTAMP" />
+                    <CheckBox Content="Enabled" FontSize="11" IsChecked="{Binding TimestampEnabled}" />
+                    <TextBox Classes="field" Text="{Binding TimestampFormat}" FontSize="11"
+                             IsEnabled="{Binding TimestampEnabled}" Margin="0,4,0,0" />
+
+                    <TextBlock Classes="section" Text="TIMEOUTS (MS)" />
+                    <Grid ColumnDefinitions="*,6,*">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Write" FontSize="10" Opacity="0.6" />
+                            <TextBox Classes="field" Text="{Binding TimeoutText}" FontSize="11" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Read idle" FontSize="10" Opacity="0.6" />
+                            <TextBox Classes="field" Text="{Binding ReadTimeoutText}" FontSize="11" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Classes="section" Text="CONTROL LINES" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <CheckBox Content="DTR" FontSize="11" IsChecked="{Binding DtrEnabled}" />
+                        <CheckBox Content="RTS" FontSize="11" IsChecked="{Binding RtsEnabled}" />
+                    </StackPanel>
+                    <Button Content="Send Break" Command="{Binding SendBreakCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            FontSize="11" Margin="0,8,0,0" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <GridSplitter Grid.Column="1" Width="4" Background="Transparent" ResizeDirection="Columns" />
+
+            <!-- Terminal and command input -->
+            <Grid Grid.Column="2" RowDefinitions="*,Auto" Margin="0,6,0,0">
+                <Border Grid.Row="0" Background="{StaticResource TerminalBackground}"
+                        CornerRadius="4" ClipToBounds="True">
+                    <ScrollViewer x:Name="TerminalScroll" Padding="8,6">
+                        <SelectableTextBlock x:Name="Terminal"
+                                             FontFamily="Menlo,Monaco,Courier New,monospace"
+                                             FontSize="12"
+                                             TextWrapping="Wrap"
+                                             Foreground="{StaticResource TerminalReceive}"
+                                             SelectionBrush="#3A6EA5" />
+                    </ScrollViewer>
+                </Border>
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,6">
+                    <TextBox x:Name="InputBox" Grid.Column="0"
+                             Text="{Binding InputText}"
+                             PlaceholderText="Type a command, press Return to send"
+                             FontFamily="Menlo,Monaco,Courier New,monospace"
+                             FontSize="12"
+                             KeyDown="OnInputKeyDown" />
+                    <Button Grid.Column="1" Content="Send" Command="{Binding SendCommand}"
+                            Margin="6,0,0,0" Padding="16,0" VerticalAlignment="Stretch" />
+                    <CheckBox Grid.Column="2" IsChecked="{Binding RecordHistory}"
+                              Margin="8,0,0,0" VerticalAlignment="Center"
+                              ToolTip.Tip="Add each sent command to the history pane" />
+                </Grid>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" Width="4" Background="Transparent" ResizeDirection="Columns" />
+
+            <!-- History buttons -->
+            <Grid Grid.Column="4" RowDefinitions="Auto,*" Margin="0,6,10,6">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,4">
+                    <TextBlock Grid.Column="0" Classes="section" Text="HISTORY" Margin="0,0,0,0"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Labels" FontSize="10" Padding="6,2"
+                            Command="{Binding ToggleButtonLabelsCommand}"
+                            ToolTip.Tip="Toggle between command and description on each button" />
+                    <Button Grid.Column="2" Content="Clear" FontSize="10" Padding="6,2" Margin="4,0,0,0"
+                            Command="{Binding ClearHistoryCommand}" />
+                </Grid>
+
+                <Border Grid.Row="1" x:Name="HistoryDropTarget"
+                        BorderBrush="#40808080" BorderThickness="1" CornerRadius="4"
+                        Background="Transparent">
+                    <ScrollViewer x:Name="HistoryScroll" Padding="4">
+                        <ItemsControl ItemsSource="{Binding History}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="core:CommandEntry">
+                                    <Button Classes="history"
+                                            Classes.alt="{Binding IsAlternateStyle}"
+                                            Classes.script="{Binding IsScript}"
+                                            Content="{Binding DisplayText}"
+                                            ToolTip.Tip="{Binding TooltipText}"
+                                            Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SendEntryCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Button.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Copy to Input"
+                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).EditEntryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                                <MenuItem Header="Remove"
+                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RemoveEntryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="1" Padding="10,4" BorderThickness="0,1,0,0" BorderBrush="#30808080">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0"
+                         Fill="{Binding IsPortOpen, Converter={x:Static vm:StatusBrushes.Converter}}" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="11" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding CurrentHistoryFile}" FontSize="11"
+                           Opacity="0.55" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
