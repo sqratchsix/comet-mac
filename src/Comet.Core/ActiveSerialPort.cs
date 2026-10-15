@@ -16,12 +16,17 @@ namespace Comet.Core;
 ///
 /// Bytes are buffered raw and only decoded when read, which means switching
 /// between ASCII and HEX no longer mangles data already in flight.
+///
+/// A usb: port name opens a <see cref="UsbBulkStream"/> instead of a SerialPort.
+/// The read loop and sending work the same; baud, control lines and break do not
+/// apply and are ignored.
 /// </summary>
 public sealed class ActiveSerialPort : IDisposable
 {
     private const int ReadBufferSize = 4096;
 
     private SerialPort? activeSerial;
+    private UsbBulkStream? usbStream;
     private CancellationTokenSource? readCancellation;
     private Task? readLoop;
     private System.Timers.Timer? idleTimer;
@@ -42,6 +47,10 @@ public sealed class ActiveSerialPort : IDisposable
     public bool IsOpen { get; private set; }
     public SerialDataType DataType { get; set; } = SerialDataType.Ascii;
     public SerialPort? Port => activeSerial;
+    public bool IsUsbBulk => usbStream != null;
+
+    /// <summary>Why the last open failed, for the terminal. Empty after a successful open.</summary>
+    public string LastError { get; private set; } = string.Empty;
 
     /// <summary>Raised once the inbound line has been quiet for the read timeout.</summary>
     public event EventHandler? DataReadyToRead;
@@ -84,6 +93,9 @@ public sealed class ActiveSerialPort : IDisposable
 
     public bool CreateSerialPort()
     {
+        LastError = string.Empty;
+        if (UsbBulkEnumerator.IsUsbPath(PortName)) return CreateUsbBulkPort();
+
         try
         {
             activeSerial = new SerialPort(PortName, BaudRate, parity, DataBits, stopBits)
@@ -97,27 +109,47 @@ public sealed class ActiveSerialPort : IDisposable
 
             if (IsOpen)
             {
-                idleTimer = new System.Timers.Timer(Math.Max(1, portReadTimeoutMs)) { AutoReset = false };
-                idleTimer.Elapsed += (_, _) => DataReadyToRead?.Invoke(this, EventArgs.Empty);
-                StartReadLoop();
+                StartReadLoop(activeSerial.BaseStream);
             }
             return IsOpen;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Matches the original: a port that will not open is reported as closed,
             // the caller moves on to the next candidate port.
+            LastError = ex.Message;
             IsOpen = false;
             CleanUp();
             return false;
         }
     }
 
-    private void StartReadLoop()
+    private bool CreateUsbBulkPort()
     {
+        try
+        {
+            usbStream = UsbBulkStream.Open(PortName);
+            usbStream.WriteTimeout = portTimeoutWriteMs;
+            IsOpen = true;
+            StartReadLoop(usbStream);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            IsOpen = false;
+            CleanUp();
+            return false;
+        }
+    }
+
+    private void StartReadLoop(Stream stream)
+    {
+        idleTimer = new System.Timers.Timer(Math.Max(1, portReadTimeoutMs)) { AutoReset = false };
+        idleTimer.Elapsed += (_, _) => DataReadyToRead?.Invoke(this, EventArgs.Empty);
+
         readCancellation = new CancellationTokenSource();
         var token = readCancellation.Token;
-        var stream = activeSerial!.BaseStream;
 
         readLoop = Task.Run(async () =>
         {
@@ -193,6 +225,9 @@ public sealed class ActiveSerialPort : IDisposable
         catch (Exception) { }
         activeSerial = null;
 
+        try { usbStream?.Dispose(); } catch (Exception) { }
+        usbStream = null;
+
         try { readCancellation?.Dispose(); } catch (Exception) { }
         readCancellation = null;
         readLoop = null;
@@ -207,6 +242,7 @@ public sealed class ActiveSerialPort : IDisposable
 
     private void UpdateReadWriteTimeout()
     {
+        if (usbStream != null) usbStream.WriteTimeout = portTimeoutWriteMs;
         if (activeSerial == null) return;
         activeSerial.WriteTimeout = portTimeoutWriteMs;
         activeSerial.ReadTimeout = portTimeoutReadMs;
@@ -224,6 +260,7 @@ public sealed class ActiveSerialPort : IDisposable
     public string GetConnectionInfo(int returnFormat)
     {
         if (!IsOpen) return "No Connection";
+        if (IsUsbBulk) return PortName;
         return returnFormat == 1
             ? $"{PortName}:  {BaudRate},{parity},{DataBits},{stopBits}"
             : $"{PortName}  ({BaudRate})";
@@ -252,7 +289,8 @@ public sealed class ActiveSerialPort : IDisposable
 
     public string SendData(string dataToSend, bool endline)
     {
-        if (!IsOpen || activeSerial == null || string.IsNullOrEmpty(dataToSend)) return string.Empty;
+        if (!IsOpen || (activeSerial == null && usbStream == null) || string.IsNullOrEmpty(dataToSend))
+            return string.Empty;
 
         try
         {
@@ -260,13 +298,13 @@ public sealed class ActiveSerialPort : IDisposable
             {
                 case SerialDataType.Ascii:
                     string payload = endline ? dataToSend + lineEnd : dataToSend;
-                    activeSerial.Write(payload);
+                    WriteBytes(WireEncoding.GetBytes(payload));
                     return dataToSend;
 
                 case SerialDataType.Hex:
                     string formatted = ValidateStringIsHex(dataToSend);
                     byte[] bytes = ConvertHexStringToBytes(formatted);
-                    activeSerial.Write(bytes, 0, bytes.Length);
+                    WriteBytes(bytes);
                     return formatted;
 
                 default:
@@ -279,7 +317,21 @@ public sealed class ActiveSerialPort : IDisposable
         }
     }
 
-    public void Write(byte[] buffer, int offset, int count) => activeSerial?.Write(buffer, offset, count);
+    /// <summary>
+    /// SerialPort.Write(string) encodes with the port's Latin-1 encoding, so encoding
+    /// here first sends the same bytes on either transport.
+    /// </summary>
+    private void WriteBytes(byte[] bytes)
+    {
+        if (usbStream != null) usbStream.Write(bytes, 0, bytes.Length);
+        else activeSerial?.Write(bytes, 0, bytes.Length);
+    }
+
+    public void Write(byte[] buffer, int offset, int count)
+    {
+        if (usbStream != null) usbStream.Write(buffer, offset, count);
+        else activeSerial?.Write(buffer, offset, count);
+    }
 
     public int ReadByte() => activeSerial?.ReadByte() ?? -1;
 
@@ -345,6 +397,7 @@ public sealed class ActiveSerialPort : IDisposable
     {
         lock (pendingLock) pendingBytes.Clear();
         try { activeSerial?.DiscardInBuffer(); } catch (Exception) { }
+        usbStream?.DiscardBuffered();
     }
 
     private static byte[] ConvertHexStringToBytes(string hexValues)

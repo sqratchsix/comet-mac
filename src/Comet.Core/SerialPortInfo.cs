@@ -1,5 +1,14 @@
 namespace Comet.Core;
 
+public enum PortKind
+{
+    /// <summary>A /dev/cu device opened through System.IO.Ports.</summary>
+    Serial,
+
+    /// <summary>A vendor-class USB interface opened through libusb. No baud rate or control lines.</summary>
+    UsbBulk
+}
+
 /// <summary>
 /// A serial device the app can open, plus the friendly name shown in the UI.
 /// Replaces the Win32_PnPEntity WMI lookup the Windows build used to turn
@@ -7,7 +16,10 @@ namespace Comet.Core;
 /// </summary>
 public sealed class SerialPortInfo
 {
-    /// <summary>Device path passed to SerialPort, e.g. /dev/cu.usbserial-0001.</summary>
+    /// <summary>
+    /// Device path passed to SerialPort, e.g. /dev/cu.usbserial-0001, or a
+    /// usb:vid:pid@location:interface path for a <see cref="PortKind.UsbBulk"/> port.
+    /// </summary>
     public string DeviceName { get; }
 
     /// <summary>Short name shown in the port dropdown, e.g. usbserial-0001.</summary>
@@ -19,12 +31,18 @@ public sealed class SerialPortInfo
     /// <summary>True for USB-attached devices, which sort ahead of built-in ports.</summary>
     public bool IsUsb { get; }
 
-    public SerialPortInfo(string deviceName, string shortName, string description, bool isUsb)
+    public PortKind Kind { get; }
+
+    public bool IsUsbBulk => Kind == PortKind.UsbBulk;
+
+    public SerialPortInfo(string deviceName, string shortName, string description, bool isUsb,
+        PortKind kind = PortKind.Serial)
     {
         DeviceName = deviceName;
         ShortName = shortName;
         Description = description;
         IsUsb = isUsb;
+        Kind = kind;
     }
 
     /// <summary>Text shown in the combo box.</summary>

@@ -30,6 +30,9 @@ public sealed class SerialPortManager : IDisposable
     public int CurrentBaudRate => currentBaudRate;
     public ActiveSerialPort? Connection => currentConnection;
 
+    /// <summary>Reason the last OpenPort call failed, or empty.</summary>
+    public string LastOpenError { get; private set; } = string.Empty;
+
     public SerialDataType DataType
     {
         get => dataType;
@@ -91,6 +94,7 @@ public sealed class SerialPortManager : IDisposable
 
     public bool OpenPort()
     {
+        LastOpenError = string.Empty;
         try
         {
             DisposeConnection();
@@ -101,6 +105,7 @@ public sealed class SerialPortManager : IDisposable
                 currentConnection.DataReadyToRead += OnDataReadyToRead;
                 return portOpen = true;
             }
+            LastOpenError = currentConnection.LastError;
             return portOpen = false;
         }
         catch (Exception)

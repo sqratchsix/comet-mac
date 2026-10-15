@@ -24,7 +24,8 @@ public static class MacSerialPortEnumerator
     private static readonly Regex KeyValue = new("^\\s*[|\\s]*\"(?<key>[^\"]+)\"\\s*=\\s*\"(?<value>[^\"]*)\"", RegexOptions.Compiled);
 
     /// <summary>
-    /// Returns every call-out serial device, USB devices first, then natural sort.
+    /// Returns every call-out serial device plus any vendor-class USB interfaces
+    /// libusb can reach, USB devices first, then natural sort.
     /// Never throws: on any failure it falls back to a bare /dev/cu.* directory scan.
     /// </summary>
     public static IReadOnlyList<SerialPortInfo> GetPorts()
@@ -50,6 +51,10 @@ public static class MacSerialPortEnumerator
 
             if (details.TryGetValue(device, out var entry))
             {
+                // Paired Bluetooth devices: opening one makes the Mac try to connect
+                // to a speaker or tablet, which is never what COMET is for.
+                if (entry.IsBluetooth) continue;
+
                 // Built-in ports appear in ioreg with no USB ancestor and therefore
                 // no product name, so fall back to a hand written description.
                 string description = string.IsNullOrEmpty(entry.Description)
@@ -59,16 +64,22 @@ public static class MacSerialPortEnumerator
             }
             else
             {
+                // ioreg unavailable: the one Bluetooth port with a fixed name still goes.
+                if (shortName.Equals("Bluetooth-Incoming-Port", StringComparison.OrdinalIgnoreCase)) continue;
                 result.Add(new SerialPortInfo(device, shortName, DescribeKnownPort(shortName), false));
             }
         }
+
+        result.AddRange(UsbBulkEnumerator.GetPorts());
 
         IComparer<string> comparer = new NaturalComparer();
         result.Sort((a, b) =>
         {
             // USB adapters are what people actually plug in, so float them to the top;
             // the Bluetooth and debug-console pseudo ports sink to the bottom.
+            // Raw USB interfaces follow the USB serial ports.
             if (a.IsUsb != b.IsUsb) return a.IsUsb ? -1 : 1;
+            if (a.Kind != b.Kind) return a.Kind.CompareTo(b.Kind);
             return comparer.Compare(a.ShortName, b.ShortName);
         });
         return result;
@@ -106,15 +117,23 @@ public static class MacSerialPortEnumerator
 
     private readonly struct IoRegEntry
     {
-        public IoRegEntry(string description, bool isUsb)
+        public IoRegEntry(string description, bool isUsb, bool isBluetooth)
         {
             Description = description;
             IsUsb = isUsb;
+            IsBluetooth = isBluetooth;
         }
 
         public string Description { get; }
         public bool IsUsb { get; }
+
+        /// <summary>Created by macOS's Bluetooth serial driver for a paired device.</summary>
+        public bool IsBluetooth { get; }
     }
+
+    // The driver behind /dev/cu.* ports for paired Bluetooth Classic devices.
+    // Older macOS releases used kernel classes with Bluetooth in the name instead.
+    private const string BluetoothSerialDriver = "com.apple.IOUserBluetoothSerialDriver";
 
     /// <summary>
     /// Walks the ioreg tree and maps each IOCalloutDevice path to the product name
@@ -130,6 +149,8 @@ public static class MacSerialPortEnumerator
 
         // Stack of USB ancestors currently in scope: indent depth -> best known name.
         var ancestors = new List<(int Indent, string Name)>();
+        // Indents of Bluetooth serial driver nodes currently in scope.
+        var bluetooth = new List<int>();
         int currentNodeIndent = 0;
 
         foreach (var line in output.Split('\n'))
@@ -144,6 +165,9 @@ public static class MacSerialPortEnumerator
                     if (ancestors[i].Indent >= currentNodeIndent)
                         ancestors.RemoveAt(i);
                 }
+                bluetooth.RemoveAll(indent => indent >= currentNodeIndent);
+                if (line.Contains("<class IOBluetooth", StringComparison.Ordinal))
+                    bluetooth.Add(currentNodeIndent);
                 continue;
             }
 
@@ -156,9 +180,15 @@ public static class MacSerialPortEnumerator
             switch (key)
             {
                 case "USB Product Name":
-                case "Product Name":
                     // Belongs to the node currently being printed.
                     ancestors.Add((currentNodeIndent, value));
+                    break;
+
+                case "Product Name":
+                    // Driver nodes below a USB device carry generic names such as
+                    // "USB ACM", so only use this when nothing above has a real name.
+                    if (ancestors.Count == 0)
+                        ancestors.Add((currentNodeIndent, value));
                     break;
 
                 case "USB Vendor Name":
@@ -167,9 +197,13 @@ public static class MacSerialPortEnumerator
                         ancestors.Add((currentNodeIndent, value));
                     break;
 
+                case "IOUserServerName":
+                    if (value == BluetoothSerialDriver) bluetooth.Add(currentNodeIndent);
+                    break;
+
                 case "IOCalloutDevice":
                     string name = ancestors.Count > 0 ? ancestors[^1].Name : string.Empty;
-                    map[value] = new IoRegEntry(name, ancestors.Count > 0);
+                    map[value] = new IoRegEntry(name, ancestors.Count > 0, bluetooth.Count > 0);
                     break;
             }
         }
