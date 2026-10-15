@@ -50,6 +50,29 @@ fi
 
 chmod +x "$APP/Contents/MacOS/Comet.Desktop"
 
+# libusb lets COMET open vendor-class USB interfaces, such as a cellular modem's
+# AT port, which macOS never exposes under /dev. It is optional: without it the
+# app lists serial ports only. LGPL-2.1, loaded dynamically, licence alongside.
+for LIBUSB in /opt/homebrew/lib/libusb-1.0.0.dylib /usr/local/lib/libusb-1.0.0.dylib; do
+    if [ -f "$LIBUSB" ]; then
+        echo "==> Bundling $LIBUSB"
+        cp -L "$LIBUSB" "$APP/Contents/MacOS/libusb-1.0.0.dylib"
+        LIBUSB_ROOT="$(cd "$(dirname "$(readlink -f "$LIBUSB")")/.." && pwd)"
+        if [ -f "$LIBUSB_ROOT/COPYING" ]; then
+            cp "$LIBUSB_ROOT/COPYING" "$APP/Contents/Resources/libusb-COPYING.txt"
+        fi
+        break
+    fi
+done
+
+# Command files from the repo go beside the app, the folder COMET reads for the
+# A B C D header buttons and Load Commands. --update keeps any copy there that is
+# newer, so commands saved from inside COMET survive a rebuild.
+echo "==> Copying command files beside the app"
+for item in "$ROOT"/Button*.txt "$ROOT/COMMANDS"; do
+    [ -e "$item" ] && rsync -a --update "$item" "$BUILD/"
+done
+
 # An ad-hoc signature is enough for local use and keeps Gatekeeper from
 # refusing to launch an unsigned arm64 binary outright. Distributing to
 # other machines needs a Developer ID signature and notarisation instead.

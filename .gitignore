@@ -3,6 +3,9 @@ bin/
 obj/
 build/publish-*/
 build/COMET.app/
+# Copied beside the app by build-app.sh; the repo root holds the originals.
+build/*.txt
+build/COMMANDS/
 
 # IDE
 .vs/

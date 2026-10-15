@@ -1,0 +1,55 @@
+AT									AT
+
+AT+COPS?							Current Carrier
+AT+QNWINFO							Network Info
+AT+QSPN								Service Provider
+AT+QENG="servingcell"				Primary Cell
+AT+QENG="neighbourcell"				Neighbor Cells
+
+AT+CSQ								CSQ Signal Quality
+AT+QRSRP							RSRP	-80+ ex / -90+ good / -100+ ok / <-100 no signal 
+AT+QRSRQ							RSRQ	-10+ ex / -15+ good / -20+ ok / <-20 no signal 
+AT+QSINR							SINR	20+ ex / -13+ good / -0+ ok / <0 bad 
+
+AT+QUIMSLOT?						Query SIM Slot
+AT+QUIMSLOT=1						use SIM1
+AT+QUIMSLOT=2						use SIM2
+AT+CIMI								IMSI
+AT+ICCID							ICCID
+AT+CNUM								UE Phone Number
+
+AT+QNWPREFCFG="mode_pref"			Technology?
+AT+QNWPREFCFG="mode_pref",AUTO		Technology Auto
+AT+QNWPREFCFG="mode_pref",LTE		LTE preferred
+AT+QNWPREFCFG="mode_pref",NR5G		5G preferred
+	
+AT+GSN								IMEI
+AT+QGMR								FW
+at+qmbncfg="list"					List MBNs	
+
+AT+QCFG="usbspeed"					USB Speed Query
+	
+AT+CGDCONT?							PDP Context / APN List
+AT+CGPADDR							PDP Addresses
+
+AT+CBC								Voltage
+AT+QADC=0							ADC 0
+AT+QADC=1							ADC 1
+
+at+qagpio=0,22,1					GPIO22 high
+at+qagpio=0,22,0					GPIO22 low
+at+qagpio=0,28,1					GPIO28 high
+at+qagpio=0,28,0					GPIO28 low
+at+qagpio=0,56,1					GPIO56 high
+at+qagpio=0,56,0					GPIO56 low
+at+qagpio=0,58,1					GPIO58 high
+at+qagpio=0,58,0					GPIO58 low
+
+AT+CFUN=1,1							Restart		
+AT+QPOWD							Power Down
+
+AT+CFUN=0							Min Functionality
+AT+CFUN=1							Full Functionality
+AT+CFUN=4							Disable Tx Rx
+
+
