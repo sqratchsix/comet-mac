@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Comet.Desktop.Views.ScriptPromptWindow"
+        Title="Script Input"
+        Width="420" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <!-- The user_input_* functions' question, the Windows DialogWin in input mode. -->
+    <StackPanel Margin="16" Spacing="10">
+        <TextBlock x:Name="PromptText" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimary}" />
+        <TextBox x:Name="AnswerBox" FontFamily="{DynamicResource FontMono}" />
+        <Grid ColumnDefinitions="*,Auto,6,Auto">
+            <Button Grid.Column="1" Content="STOP SCRIPT" Click="OnCancel" IsCancel="True" />
+            <Button Grid.Column="3" Classes="primary" Content="OK" Width="80" Click="OnOk" IsDefault="True" />
+        </Grid>
+    </StackPanel>
+</Window>

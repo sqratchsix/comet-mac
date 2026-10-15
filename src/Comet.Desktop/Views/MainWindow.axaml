@@ -4,28 +4,48 @@
         xmlns:core="using:Comet.Core"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1060" d:DesignHeight="640"
+        mc:Ignorable="d" d:DesignWidth="1060" d:DesignHeight="680"
         x:Class="Comet.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/comet.ico"
         Title="{Binding Title}"
-        Width="1060" Height="640"
-        MinWidth="880" MinHeight="500">
+        Width="1060" Height="680"
+        MinWidth="880" MinHeight="660">
 
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
+
+    <!-- Right-click anywhere outside the terminal and history panes. -->
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="New Window" Click="OnNewWindowItem" />
+            <MenuItem Header="Open Containing Folder" Command="{Binding OpenContainingFolderCommand}" />
+            <Separator />
+            <MenuItem Header="New Script…" Click="OnNewScriptItem" />
+            <MenuItem Header="Stop Script" Command="{Binding StopScriptCommand}" />
+            <MenuItem Header="Script Commands…" Click="OnScriptCommandsItem" />
+            <MenuItem Header="Open Response Log" Command="{Binding OpenResponseLogCommand}" />
+            <Separator />
+            <MenuItem Header="Refresh Ports" Command="{Binding RefreshPortsCommand}" />
+            <MenuItem Header="{Binding OpenCloseMenuLabel}" Command="{Binding TogglePortCommand}" />
+        </ContextMenu>
+    </Window.ContextMenu>
 
     <NativeMenu.Menu>
         <NativeMenu>
             <NativeMenuItem Header="File">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
+                        <NativeMenuItem Header="New Window" Gesture="Cmd+N" Click="OnNewWindow" />
+                        <NativeMenuItem Header="Close Window" Gesture="Cmd+W" Click="OnCloseWindow" />
+                        <NativeMenuItemSeparator />
                         <NativeMenuItem Header="Open History…" Gesture="Cmd+O" Click="OnOpenHistory" />
                         <NativeMenuItem Header="Append History…" Click="OnAppendHistory" />
                         <NativeMenuItem Header="Save History As…" Gesture="Cmd+S" Click="OnSaveHistory" />
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="Reveal History File in Finder" Click="OnRevealHistoryFile" />
+                        <NativeMenuItem Header="Open Containing Folder" Command="{Binding OpenContainingFolderCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -38,6 +58,17 @@
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="Refresh Ports" Gesture="Cmd+R" Command="{Binding RefreshPortsCommand}" />
                         <NativeMenuItem Header="Open / Close Port" Gesture="Cmd+T" Command="{Binding TogglePortCommand}" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="Script">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="New Script…" Click="OnNewScript" />
+                        <NativeMenuItem Header="Stop Script" Gesture="Cmd+OemPeriod" Command="{Binding StopScriptCommand}" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Script Commands…" Click="OnScriptCommands" />
+                        <NativeMenuItem Header="Open Response Log" Command="{Binding OpenResponseLogCommand}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -59,13 +90,26 @@
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
             <TextBlock Grid.Column="0" Classes="appTitle" Text="COMET" VerticalAlignment="Center" />
 
-            <Border Grid.Column="1" Classes="headerChip" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="7" Height="7" VerticalAlignment="Center"
-                             Fill="{Binding IsPortOpen, Converter={x:Static vm:StatusBrushes.Converter}}" />
-                    <TextBlock Text="{Binding SelectedPort.ShortName, FallbackValue='No device'}" />
-                </StackPanel>
-            </Border>
+            <!-- A B C D: load ButtonA.txt..ButtonD.txt from COMET's folder, as on Windows. -->
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding QuickLoadSlots}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:QuickLoadSlot">
+                        <Button Classes="quickLoad"
+                                Classes.loaded="{Binding IsLoaded}"
+                                Classes.missing="{Binding !Exists}"
+                                Content="{Binding Letter}"
+                                ToolTip.Tip="{Binding Tooltip}"
+                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).LoadQuickSlotCommand}"
+                                CommandParameter="{Binding}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
         </Grid>
 
         <!-- Connection bar -->
@@ -106,15 +150,20 @@
             </Grid>
 
             <!-- Port settings -->
-            <Border Grid.Row="1" Grid.Column="0" Classes="panel" Padding="8,10">
-                <ScrollViewer>
-                    <StackPanel Spacing="7">
+            <!--
+                Never scrolls: the window's MinHeight is set so every setting fits.
+                Adding a control here means re-measuring that, see CLAUDE.md.
+            -->
+            <Border x:Name="PortPanel" Grid.Row="1" Grid.Column="0" Classes="panel" Padding="8,10">
+                    <StackPanel x:Name="PortSettings" Spacing="7" VerticalAlignment="Top">
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="DEVICE" />
+                            <!-- Live while the port is open: opening it closes the port, picking reopens. -->
                             <ComboBox ItemsSource="{Binding Ports}"
                                       SelectedItem="{Binding SelectedPort}"
-                                      IsEnabled="{Binding CanEditPortSettings}"
+                                      DropDownOpened="OnDeviceDropDownOpened"
+                                      DropDownClosed="OnDeviceDropDownClosed"
                                       ToolTip.Tip="{Binding SelectedPort.DeviceName}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="core:SerialPortInfo">
@@ -129,7 +178,7 @@
                             <TextBlock Classes="fieldLabel" Text="BAUD" />
                             <AutoCompleteBox ItemsSource="{Binding BaudRates}"
                                              Text="{Binding SelectedBaudRate, Mode=TwoWay}"
-                                             IsEnabled="{Binding CanEditPortSettings}"
+                                             IsEnabled="{Binding CanEditLineSettings}"
                                              FilterMode="StartsWith"
                                              MinimumPrefixLength="0"
                                              ToolTip.Tip="Pick a standard rate or type any value" />
@@ -140,13 +189,13 @@
                                 <TextBlock Classes="fieldLabel" Text="DATA" />
                                 <ComboBox ItemsSource="{Binding DataBitsOptions}"
                                           SelectedItem="{Binding SelectedDataBits}"
-                                          IsEnabled="{Binding CanEditPortSettings}" />
+                                          IsEnabled="{Binding CanEditLineSettings}" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Classes="fieldLabel" Text="STOP" />
                                 <ComboBox ItemsSource="{Binding StopBitsOptions}"
                                           SelectedItem="{Binding SelectedStopBits}"
-                                          IsEnabled="{Binding CanEditPortSettings}" />
+                                          IsEnabled="{Binding CanEditLineSettings}" />
                             </StackPanel>
                         </Grid>
 
@@ -154,7 +203,7 @@
                             <TextBlock Classes="fieldLabel" Text="PARITY" />
                             <ComboBox ItemsSource="{Binding ParityOptions}"
                                       SelectedItem="{Binding SelectedParity}"
-                                      IsEnabled="{Binding CanEditPortSettings}" />
+                                      IsEnabled="{Binding CanEditLineSettings}" />
                         </StackPanel>
 
                         <StackPanel>
@@ -179,7 +228,7 @@
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="CONTROL LINES" />
-                            <Grid ColumnDefinitions="*,3,*,3,*">
+                            <Grid ColumnDefinitions="*,3,*,3,*" IsEnabled="{Binding HasSerialLine}">
                                 <ToggleButton Grid.Column="0" Classes="chip line" Content="DTR"
                                               IsChecked="{Binding DtrEnabled, Mode=TwoWay}" />
                                 <ToggleButton Grid.Column="2" Classes="chip line" Content="RTS"
@@ -225,7 +274,6 @@
                         </Grid>
 
                     </StackPanel>
-                </ScrollViewer>
             </Border>
 
             <!-- The port's action, on the command bar's baseline. -->
@@ -238,8 +286,34 @@
 
             <!-- Terminal -->
             <Border Grid.Row="1" Grid.Column="2" Classes="well" ClipToBounds="True">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Copy" Click="OnTerminalCopy" />
+                        <MenuItem Header="Select All" Click="OnTerminalSelectAll" />
+                        <MenuItem Header="Clear Terminal" Command="{Binding ClearTerminalCommand}" />
+                        <Separator />
+                        <MenuItem Header="{Binding TimestampMenuLabel}" Command="{Binding ToggleTimestampsCommand}" />
+                        <MenuItem Header="Timestamp Format" ItemsSource="{Binding TimestampFormats}">
+                            <MenuItem.Styles>
+                                <Style Selector="MenuItem > MenuItem" x:DataType="x:String">
+                                    <Setter Property="Header" Value="{Binding}" />
+                                    <Setter Property="Command"
+                                            Value="{Binding $parent[ContextMenu].((vm:MainViewModel)DataContext).SetTimestampFormatCommand}" />
+                                    <Setter Property="CommandParameter" Value="{Binding}" />
+                                </Style>
+                            </MenuItem.Styles>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="Send Break" Command="{Binding SendBreakCommand}" />
+                        <MenuItem Header="Reset Buffer" Command="{Binding ResetBufferCommand}" />
+                        <Separator />
+                        <MenuItem Header="New Window" Click="OnNewWindowItem" />
+                        <MenuItem Header="Open Containing Folder" Command="{Binding OpenContainingFolderCommand}" />
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <ScrollViewer x:Name="TerminalScroll" Padding="10,8">
                     <SelectableTextBlock x:Name="Terminal"
+                                         ContextFlyout="{x:Null}"
                                          FontFamily="{DynamicResource FontMono}"
                                          FontSize="11.5"
                                          TextWrapping="Wrap"
@@ -258,7 +332,33 @@
             </Grid>
 
             <!-- History, running the full height beside both rows. -->
-            <Border Grid.Row="1" Grid.RowSpan="2" Grid.Column="4" Classes="panel" Padding="7,8">
+            <Border x:Name="HistoryPanel" Grid.Row="1" Grid.RowSpan="2" Grid.Column="4" Classes="panel" Padding="7,8">
+                <!--
+                    One menu for the pane and its buttons, as on Windows. Right-clicking
+                    a button shows that button's actions above the pane's; the code
+                    behind records which button was clicked and fills Load Commands.
+                -->
+                <Border.ContextMenu>
+                    <ContextMenu x:Name="HistoryMenu" Opening="OnHistoryMenuOpening">
+                        <MenuItem x:Name="SendButtonItem" Click="OnSendClickedButton" />
+                        <MenuItem x:Name="EditScriptItem" Header="Edit Script…" Click="OnEditClickedScript" />
+                        <MenuItem x:Name="CopyButtonItem" Header="Copy Command" Click="OnCopyClickedButton" />
+                        <MenuItem x:Name="EditButtonItem" Header="Copy to Input" Click="OnEditClickedButton" />
+                        <MenuItem x:Name="RemoveButtonItem" Header="Remove Button" Click="OnRemoveClickedButton" />
+                        <Separator x:Name="ButtonItemsSeparator" />
+                        <MenuItem Header="New Script…" Click="OnNewScriptItem" />
+                        <MenuItem Header="Stop Script" Command="{Binding StopScriptCommand}"
+                                  IsVisible="{Binding IsScriptRunning}" />
+                        <MenuItem Header="Script Commands…" Click="OnScriptCommandsItem" />
+                        <Separator />
+                        <MenuItem x:Name="LoadCommandsItem" Header="Load Commands" />
+                        <MenuItem Header="Append Commands…" Click="OnAppendHistoryItem" />
+                        <MenuItem Header="Save Commands As…" Click="OnSaveHistoryItem" />
+                        <Separator />
+                        <MenuItem Header="Toggle CMD / Description" Command="{Binding ToggleButtonLabelsCommand}" />
+                        <MenuItem Header="Remove All Buttons" Command="{Binding ClearHistoryCommand}" />
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <!-- Shown until the pane has something in it. -->
                     <TextBlock Classes="appSubtitle"
@@ -269,8 +369,18 @@
                                Margin="10"
                                IsVisible="{Binding !History.Count}" />
 
+                    <!--
+                        Buttons build upward from the foot of the pane, as on Windows:
+                        the first entry sits at the bottom and each new one lands on
+                        top, so a loaded file reads bottom to top.
+                    -->
                     <ScrollViewer x:Name="HistoryScroll">
-                        <ItemsControl ItemsSource="{Binding History}">
+                        <ItemsControl ItemsSource="{Binding History}" VerticalAlignment="Bottom">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ReversibleStackPanel ReverseOrder="True" Spacing="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="core:CommandEntry">
                                     <Button Classes="history"
@@ -279,18 +389,7 @@
                                             Content="{Binding DisplayText}"
                                             ToolTip.Tip="{Binding TooltipText}"
                                             Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SendEntryCommand}"
-                                            CommandParameter="{Binding}">
-                                        <Button.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="Copy to Input"
-                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).EditEntryCommand}"
-                                                          CommandParameter="{Binding}" />
-                                                <MenuItem Header="Remove"
-                                                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RemoveEntryCommand}"
-                                                          CommandParameter="{Binding}" />
-                                            </ContextMenu>
-                                        </Button.ContextMenu>
-                                    </Button>
+                                            CommandParameter="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -299,8 +398,9 @@
             </Border>
         </Grid>
 
-        <!-- Footer -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10" Margin="0,12,0,0">
+        <!-- Footer: connection facts on the left, the latest status message on the right. -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,16,Auto,16,*" Margin="0,12,0,0">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
             <Border Classes="statusChip"
                     Background="{Binding IsPortOpen, Converter={x:Static vm:StatusBrushes.ChipBackground}}">
                 <TextBlock Text="{Binding IsPortOpen, Converter={x:Static vm:StatusBrushes.ChipLabel}}"
@@ -315,5 +415,16 @@
                        IsVisible="{Binding CurrentHistoryFileName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <TextBlock Classes="footer" Text="{Binding CurrentHistoryFileName}" />
         </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsScriptRunning}">
+            <TextBlock Classes="footer running" Text="{Binding ScriptProgressText}" />
+            <Button Content="STOP" Padding="8,2" Command="{Binding StopScriptCommand}"
+                    ToolTip.Tip="Stop the running script (⌘.)" />
+        </StackPanel>
+        <TextBlock Grid.Column="4" Classes="footer status"
+                   Classes.error="{Binding StatusIsError}"
+                   Text="{Binding StatusMessage}"
+                   ToolTip.Tip="{Binding StatusMessage}"
+                   HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+        </Grid>
     </Grid>
 </Window>

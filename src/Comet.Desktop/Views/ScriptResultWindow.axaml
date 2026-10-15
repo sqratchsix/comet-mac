@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Comet.Desktop.Views.ScriptResultWindow"
+        Title="Script Result"
+        Width="380" Height="200" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <!--
+        PASSED / FAILED from the response_* functions, the Windows DialogWin's
+        green and red states. One window is reused and the script carries on.
+    -->
+    <Border x:Name="Panel" Padding="16">
+        <Grid RowDefinitions="*,Auto,Auto">
+            <TextBlock x:Name="Verdict" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="34" FontWeight="Bold" Foreground="White" />
+            <SelectableTextBlock x:Name="Detail" Grid.Row="1" TextWrapping="Wrap" TextAlignment="Center"
+                                 FontFamily="{DynamicResource FontMono}" FontSize="11" Foreground="White"
+                                 Margin="0,0,0,12" />
+            <Button Grid.Row="2" Content="OK" Width="80" HorizontalAlignment="Center" Click="OnOk" IsDefault="True" />
+        </Grid>
+    </Border>
+</Window>

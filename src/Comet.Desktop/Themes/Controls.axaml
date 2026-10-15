@@ -79,6 +79,19 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- Status message: a step brighter than the facts beside it; amber for errors. -->
+    <Style Selector="TextBlock.footer.status">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+    </Style>
+
+    <Style Selector="TextBlock.footer.running">
+        <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="TextBlock.footer.status.error">
+        <Setter Property="Foreground" Value="{DynamicResource MeterAmber}" />
+    </Style>
+
     <!-- ============================ Surfaces =========================== -->
 
     <!-- PanelBackground: gradient, hairline border, soft drop shadow. -->
@@ -104,21 +117,6 @@
         <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
-    </Style>
-
-    <!-- The header device picker: panelRaised, radius 7, 10/6 padding. -->
-    <Style Selector="Border.headerChip">
-        <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="7" />
-        <Setter Property="Padding" Value="10,6" />
-    </Style>
-
-    <Style Selector="Border.headerChip TextBlock">
-        <Setter Property="FontSize" Value="11" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
 
     <!-- Footer status chip: tint text on tint at 14%, radius 4. -->
@@ -170,6 +168,35 @@
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource PanelRaised}" />
         <Setter Property="TextBlock.Foreground" Value="#3A3F47" />
+    </Style>
+
+    <!-- Header A B C D quick-load buttons: square, the header chip's height. -->
+    <Style Selector="Button.quickLoad">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="0" />
+    </Style>
+
+    <Style Selector="Button.quickLoad /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+
+    <!-- No file behind it: still clickable, so it can say where the file belongs. -->
+    <Style Selector="Button.quickLoad.missing /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+
+    <!-- The file currently in the history pane, lit in accent like a chip that is on. -->
+    <Style Selector="Button.quickLoad.loaded /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderBrush" Value="#E65AC8FA" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+        <Setter Property="BoxShadow" Value="0 0 4 0 #665AC8FA" />
     </Style>
 
     <!-- Full-width action, the MUTE footprint. -->
@@ -237,7 +264,6 @@
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="Padding" Value="7,5" />
-        <Setter Property="Margin" Value="0,0,0,3" />
     </Style>
 
     <Style Selector="Button.history /template/ ContentPresenter#PART_ContentPresenter">
@@ -455,6 +481,15 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="Padding" Value="2,3" />
+    </Style>
+
+    <!-- Script editor command cell: reads like the argument boxes beside it. -->
+    <Style Selector="AutoCompleteBox.stepCommand /template/ TextBox#PART_TextBox">
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WellEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
     </Style>
 
     <!-- ============================ ScrollBar ========================== -->

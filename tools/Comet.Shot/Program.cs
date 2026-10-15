@@ -32,8 +32,8 @@ viewModel.LoadSampleContent();
 // Two layout passes: the first realises the template, the second settles the
 // text runs the terminal added during load.
 Dispatcher.UIThread.RunJobs();
-window.Measure(new Size(1060, 640));
-window.Arrange(new Rect(0, 0, 1060, 640));
+window.Measure(new Size(1060, 680));
+window.Arrange(new Rect(0, 0, 1060, 680));
 Dispatcher.UIThread.RunJobs();
 
 var frame = window.CaptureRenderedFrame();

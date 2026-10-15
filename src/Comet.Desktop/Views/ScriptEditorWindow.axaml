@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Comet.Desktop.ViewModels"
+        x:Class="Comet.Desktop.Views.ScriptEditorWindow"
+        x:DataType="vm:ScriptEditorViewModel"
+        Title="{Binding WindowTitle}"
+        Width="960" Height="560" MinWidth="760" MinHeight="380"
+        WindowStartupLocation="CenterOwner">
+
+    <!--
+        The Windows build's PromptScriptEdit: name, description, timing, and a
+        Type / Command / Arg1..Arg5 table. TEXT swaps the table for the raw lines
+        as they are saved in the history file, for pasting a script in whole.
+    -->
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="14">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,10,2*" Margin="0,0,0,10">
+            <StackPanel Grid.Column="0">
+                <TextBlock Classes="fieldLabel" Text="NAME (BUTTON LABEL)" />
+                <TextBox x:Name="NameBox" Text="{Binding Name}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Classes="fieldLabel" Text="DESCRIPTION" />
+                <TextBox Text="{Binding Description}" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,10,Auto,10,Auto,*,Auto,6,Auto" Margin="0,0,0,10">
+            <StackPanel Grid.Column="0">
+                <TextBlock Classes="fieldLabel" Text="STEP DELAY MS" />
+                <TextBox Classes="readout" Width="90" Text="{Binding DelayText}"
+                         ToolTip.Tip="Pause after every step, until a **delay step changes it" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Classes="fieldLabel" Text="LOOPS" />
+                <TextBox Classes="readout" Width="70" Text="{Binding LoopCountText}"
+                         ToolTip.Tip="How many times the whole script runs" />
+            </StackPanel>
+            <StackPanel Grid.Column="4">
+                <TextBlock Classes="fieldLabel" Text="LOOP DELAY MS" />
+                <TextBox Classes="readout" Width="90" Text="{Binding LoopDelayText}"
+                         ToolTip.Tip="Pause between passes" />
+            </StackPanel>
+            <ToggleButton Grid.Column="6" Classes="chip view compact" Content="TEXT" VerticalAlignment="Bottom"
+                          IsChecked="{Binding IsTextMode, Mode=TwoWay}"
+                          ToolTip.Tip="Edit the script as text, one step per line, tabs between fields" />
+            <Button Grid.Column="8" Content="COMMANDS…" VerticalAlignment="Bottom" Click="OnShowCommands"
+                    ToolTip.Tip="The script functions table" />
+        </Grid>
+
+        <!-- Column headings, matching the row template below. -->
+        <Grid Grid.Row="2" ColumnDefinitions="112,6,2.2*,6,*,6,*,6,*,6,*,6,*,6,96" Margin="11,0,25,4"
+              IsVisible="{Binding !IsTextMode}">
+            <TextBlock Grid.Column="0" Classes="fieldLabel" Text="TYPE" />
+            <TextBlock Grid.Column="2" Classes="fieldLabel" Text="COMMAND" />
+            <TextBlock Grid.Column="4" Classes="fieldLabel" Text="ARG1" />
+            <TextBlock Grid.Column="6" Classes="fieldLabel" Text="ARG2" />
+            <TextBlock Grid.Column="8" Classes="fieldLabel" Text="ARG3" />
+            <TextBlock Grid.Column="10" Classes="fieldLabel" Text="ARG4" />
+            <TextBlock Grid.Column="12" Classes="fieldLabel" Text="ARG5" />
+        </Grid>
+
+        <Border Grid.Row="3" Classes="well" Padding="6">
+            <Grid>
+                <ScrollViewer IsVisible="{Binding !IsTextMode}">
+                    <ItemsControl ItemsSource="{Binding Steps}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ScriptStepRow">
+                                <Grid ColumnDefinitions="112,6,2.2*,6,*,6,*,6,*,6,*,6,*,6,96" Margin="5,0,5,0">
+                                    <ComboBox Grid.Column="0" ItemsSource="{x:Static vm:ScriptStepRow.Types}"
+                                              SelectedItem="{Binding Type}" HorizontalAlignment="Stretch" />
+                                    <AutoCompleteBox Grid.Column="2" Classes="stepCommand" Text="{Binding Command, Mode=TwoWay}"
+                                                     ItemsSource="{Binding Suggestions}"
+                                                     FilterMode="StartsWith" MinimumPrefixLength="0"
+                                                     Watermark="{Binding CommandHint}"
+                                                     ToolTip.Tip="{Binding CommandTip}" />
+                                    <TextBox Grid.Column="4" Text="{Binding Arg1}" Watermark="{Binding Hint1}" FontFamily="{DynamicResource FontMono}" />
+                                    <TextBox Grid.Column="6" Text="{Binding Arg2}" Watermark="{Binding Hint2}" FontFamily="{DynamicResource FontMono}" />
+                                    <TextBox Grid.Column="8" Text="{Binding Arg3}" Watermark="{Binding Hint3}" FontFamily="{DynamicResource FontMono}" />
+                                    <TextBox Grid.Column="10" Text="{Binding Arg4}" Watermark="{Binding Hint4}" FontFamily="{DynamicResource FontMono}" />
+                                    <TextBox Grid.Column="12" Text="{Binding Arg5}" Watermark="{Binding Hint5}" FontFamily="{DynamicResource FontMono}" />
+                                    <StackPanel Grid.Column="14" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                        <Button Content="↑" Padding="6,4" ToolTip.Tip="Move up"
+                                                Command="{Binding $parent[ItemsControl].((vm:ScriptEditorViewModel)DataContext).MoveStepUpCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="↓" Padding="6,4" ToolTip.Tip="Move down"
+                                                Command="{Binding $parent[ItemsControl].((vm:ScriptEditorViewModel)DataContext).MoveStepDownCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="+" Padding="6,4" ToolTip.Tip="Insert a step above"
+                                                Command="{Binding $parent[ItemsControl].((vm:ScriptEditorViewModel)DataContext).InsertStepAboveCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="✕" Padding="6,4" ToolTip.Tip="Remove step"
+                                                Command="{Binding $parent[ItemsControl].((vm:ScriptEditorViewModel)DataContext).RemoveStepCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBox IsVisible="{Binding IsTextMode}" Text="{Binding ScriptText}"
+                         AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                         FontFamily="{DynamicResource FontMono}" FontSize="11.5"
+                         VerticalContentAlignment="Top"
+                         Watermark="One step per line. Functions start with ** and take tab separated arguments." />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto,6,Auto,6,Auto,6,Auto" Margin="0,10,0,0">
+            <Button Grid.Column="0" Content="ADD STEP" Command="{Binding AddStepCommand}"
+                    IsVisible="{Binding !IsTextMode}" />
+            <TextBlock Grid.Column="1" Classes="footer status error" Margin="12,0"
+                       Text="{Binding Error}" TextTrimming="CharacterEllipsis" />
+            <Button Grid.Column="2" Content="RUN" Click="OnRun"
+                    ToolTip.Tip="Run the script as edited, without saving it" />
+            <Button Grid.Column="4" Content="CANCEL" Click="OnCancel" IsCancel="True" />
+            <Button Grid.Column="6" Classes="primary" Content="SAVE" Width="80" Click="OnSave" IsDefault="True" />
+        </Grid>
+    </Grid>
+</Window>

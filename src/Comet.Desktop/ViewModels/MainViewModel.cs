@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -36,7 +37,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public MainViewModel()
     {
-        portManager.DataReceived += (_, data) => AppendToTerminal(data, true);
+        portManager.DataReceived += (_, data) =>
+        {
+            CaptureReceived(data);
+            AppendToTerminal(data, true);
+        };
         // The footer's command count and the empty-pane message both track this.
         History.CollectionChanged += (_, _) =>
         {
@@ -44,6 +49,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             OnPropertyChanged(nameof(HistoryCount));
         };
         RefreshPorts();
+        RefreshQuickLoadSlots();
     }
 
     /// <summary>Bound by the history pane to swap in its placeholder text.</summary>
@@ -101,18 +107,30 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public string OpenCloseLabel => IsPortOpen ? "CLOSE PORT" : "OPEN PORT";
 
+    public string OpenCloseMenuLabel => IsPortOpen ? "Close Port" : "Open Port";
+
     /// <summary>Port settings can only be changed while the port is closed.</summary>
     public bool CanEditPortSettings => !IsPortOpen;
+
+    /// <summary>A raw USB interface has no baud rate, framing or control lines.</summary>
+    public bool HasSerialLine => SelectedPort?.IsUsbBulk != true;
+
+    /// <summary>Baud, data, stop and parity: closed port and a real serial line.</summary>
+    public bool CanEditLineSettings => CanEditPortSettings && HasSerialLine;
 
     partial void OnIsPortOpenChanged(bool value)
     {
         OnPropertyChanged(nameof(OpenCloseLabel));
+        OnPropertyChanged(nameof(OpenCloseMenuLabel));
         OnPropertyChanged(nameof(CanEditPortSettings));
+        OnPropertyChanged(nameof(CanEditLineSettings));
         RefreshSummaries();
     }
 
     partial void OnSelectedPortChanged(SerialPortInfo? value)
     {
+        OnPropertyChanged(nameof(HasSerialLine));
+        OnPropertyChanged(nameof(CanEditLineSettings));
         UpdateTitle();
         RefreshSummaries();
     }
@@ -121,7 +139,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     partial void OnSelectedParityChanged(Parity value) => RefreshSummaries();
     partial void OnSelectedDataBitsChanged(int value) => RefreshSummaries();
     partial void OnSelectedStopBitsChanged(StopBits value) => RefreshSummaries();
-    partial void OnCurrentHistoryFileChanged(string? value) => RefreshSummaries();
+    partial void OnCurrentHistoryFileChanged(string? value)
+    {
+        RefreshSummaries();
+        RefreshQuickLoadSlots();
+    }
 
     #endregion
 
@@ -175,8 +197,28 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial string TimestampFormat { get; set; } = "HH:mm:ss:fff";
 
+    /// <summary>The presets the Windows build offered in its terminal menu.</summary>
+    public string[] TimestampFormats { get; } = { "HH:mm:ss:fff", "HH:mm:ss", "HH:mm", "yyyyMMddHHmmssffff" };
+
+    public string TimestampMenuLabel => TimestampEnabled ? "Hide Timestamps" : "Show Timestamps";
+
+    partial void OnTimestampEnabledChanged(bool value) => OnPropertyChanged(nameof(TimestampMenuLabel));
+
+    [RelayCommand]
+    private void ToggleTimestamps() => TimestampEnabled = !TimestampEnabled;
+
+    /// <summary>Picking a format from the menu also turns timestamps on, as on Windows.</summary>
+    [RelayCommand]
+    private void SetTimestampFormat(string format)
+    {
+        TimestampFormat = format;
+        TimestampEnabled = true;
+    }
+
+    // On by default, as in screen and most macOS terminals. USB CDC bridges such as
+    // the XIAO MG24's SAMD11 and TinyUSB devices discard traffic until DTR is asserted.
     [ObservableProperty]
-    public partial bool DtrEnabled { get; set; }
+    public partial bool DtrEnabled { get; set; } = true;
 
     [ObservableProperty]
     public partial bool RtsEnabled { get; set; }
@@ -216,6 +258,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial string StatusText { get; set; } = "No Connection";
 
+    /// <summary>Latest status or error message, shown at the right of the footer.</summary>
+    [ObservableProperty]
+    public partial string StatusMessage { get; set; } = "";
+
+    [ObservableProperty]
+    public partial bool StatusIsError { get; set; }
+
     [ObservableProperty]
     public partial string Title { get; set; } = "COMET";
 
@@ -237,6 +286,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         get
         {
+            if (!HasSerialLine) return "USB bulk";
             char parity = SelectedParity switch
             {
                 Parity.None => 'N',
@@ -275,7 +325,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private void UpdateTitle()
     {
-        if (IsPortOpen)
+        if (IsPortOpen && SelectedPort?.IsUsbBulk == true)
+        {
+            Title = "COMET - " + SelectedPort.ShortName + "  (USB)";
+            StatusText = SelectedPort.DeviceName;
+        }
+        else if (IsPortOpen)
         {
             Title = "COMET - " + portManager.GetConnectionInfo(0);
             StatusText = portManager.GetConnectionInfo(1);
@@ -313,13 +368,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         else OpenPort();
     }
 
-    public bool OpenPort()
+    public bool OpenPort() => OpenPort(reportFailure: true);
+
+    private bool OpenPort(bool reportFailure)
     {
         if (SelectedPort == null) return false;
 
         if (!int.TryParse(SelectedBaudRate, out int baud) || baud <= 0)
         {
-            AppendSystemMessage($"Invalid baud rate: {SelectedBaudRate}");
+            SetStatus($"Invalid baud rate: {SelectedBaudRate}", isError: true);
             return false;
         }
 
@@ -333,6 +390,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (portManager.OpenPort())
         {
             IsPortOpen = true;
+            SetStatus($"Opened {SelectedPort.ShortName}");
             portManager.SetRtsDtr(RtsEnabled, DtrEnabled);
             UpdateLineEnding();
             UpdateTitle();
@@ -340,32 +398,68 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return true;
         }
 
-        AppendSystemMessage($"Could not open {SelectedPort.DeviceName}. " +
-                            "Another program may be holding the port, or it may need permission.");
+        string reason = string.IsNullOrEmpty(portManager.LastOpenError) || !SelectedPort.IsUsbBulk
+            ? "Another program may be holding the port, or it may need permission."
+            : portManager.LastOpenError;
+        if (reportFailure) SetStatus($"Could not open {SelectedPort.ShortName}. {reason}", isError: true);
         UpdateTitle();
         return false;
     }
 
     /// <summary>
-    /// Tries each port in turn until one opens, matching openPortActionFirstTime
-    /// in the Windows build. Used once at startup.
+    /// Tries each USB serial port in turn until one opens, matching
+    /// openPortActionFirstTime in the Windows build. A new window uses this to
+    /// land on the next free port: ports are opened exclusively, so the ones other
+    /// windows hold fail quietly and are skipped.
     /// </summary>
     public bool OpenFirstAvailablePort()
     {
-        foreach (var port in Ports.Where(p => p.IsUsb))
+        var first = SelectedPort;
+
+        // Raw USB interfaces are left alone: claiming a modem's diagnostic port
+        // unasked is not a harmless default the way opening a USB UART is.
+        foreach (var port in Ports.Where(p => p.IsUsb && !p.IsUsbBulk).ToList())
         {
             SelectedPort = port;
-            if (OpenPort()) return true;
+            if (OpenPort(reportFailure: false)) return true;
         }
+
+        SelectedPort = first;
+        SetStatus("No free USB serial port. Pick a device to open one.", isError: true);
         return false;
     }
 
     public bool ClosePort()
     {
         bool closed = portManager.ClosePort();
+        if (IsPortOpen && SelectedPort != null) SetStatus($"Closed {SelectedPort.ShortName}");
         IsPortOpen = false;
         UpdateTitle();
         return closed;
+    }
+
+    private SerialPortInfo? deviceBeforeSelection;
+    private bool wasOpenBeforeSelection;
+
+    /// <summary>
+    /// The device list was opened. Close the port so the choice that follows
+    /// starts clean, and the port is never left open on a device no longer shown.
+    /// </summary>
+    public void BeginDeviceSelection()
+    {
+        deviceBeforeSelection = SelectedPort;
+        wasOpenBeforeSelection = IsPortOpen;
+        if (IsPortOpen) ClosePort();
+    }
+
+    /// <summary>
+    /// The device list was dismissed. Picking a device opens it with the current
+    /// settings; dismissing without a change restores whatever state it was in.
+    /// </summary>
+    public void EndDeviceSelection()
+    {
+        bool changed = !ReferenceEquals(SelectedPort, deviceBeforeSelection);
+        if (!IsPortOpen && SelectedPort != null && (changed || wasOpenBeforeSelection)) OpenPort();
     }
 
     [RelayCommand]
@@ -397,7 +491,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         if (!IsPortOpen)
         {
-            AppendSystemMessage("Port is not open.");
+            SetStatus("Port is not open.", isError: true);
             return;
         }
 
@@ -417,11 +511,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public void SendEntry(CommandEntry entry)
     {
+        if (entry.EntryType == CommandEntryType.ScriptRunner)
+        {
+            RunEntry(entry);
+            return;
+        }
         if (entry.EntryType != CommandEntryType.SerialCommand) return;
 
         if (!IsPortOpen)
         {
-            AppendSystemMessage("Port is not open.");
+            SetStatus("Port is not open.", isError: true);
             return;
         }
 
@@ -469,9 +568,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (string.IsNullOrEmpty(text)) return;
 
+        // Timestamps are applied per line by the view, which knows where lines start.
         formatter.ByteSpacesEnabled = ByteSpaces;
-        formatter.TimestampEnabled = TimestampEnabled;
-        formatter.TimestampFormat = TimestampFormat;
+        formatter.TimestampEnabled = false;
         text = formatter.FormatReceivedData(text, IsHexMode ? SerialDataType.Hex : SerialDataType.Ascii);
 
         // Sent commands always land on their own line. Received data does too
@@ -481,13 +580,22 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (needsNewline && (!isReceived || AddNewLineToTerminal)) text += Environment.NewLine;
 
         TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(text,
-            isReceived ? TerminalTextKind.Received : TerminalTextKind.Sent));
+            isReceived ? TerminalTextKind.Received : TerminalTextKind.Sent, DateTime.Now));
     }
 
-    private void AppendSystemMessage(string message)
+    /// <summary>
+    /// Reports what the app did in the footer. The terminal is reserved for what
+    /// actually went over the wire, so nothing here is ever written to it.
+    /// </summary>
+    private void SetStatus(string message, bool isError = false)
     {
-        TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
-            message + Environment.NewLine, TerminalTextKind.System));
+        if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SetStatus(message, isError));
+            return;
+        }
+        StatusIsError = isError;
+        StatusMessage = message;
     }
 
     [RelayCommand]
@@ -496,6 +604,70 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         TerminalCleared?.Invoke(this, EventArgs.Empty);
         InputFocusRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    #endregion
+
+    #region COMET folder
+
+    /// <summary>
+    /// The folder COMET runs from, where the Windows build kept its command files.
+    /// For the app bundle that is the folder holding COMET.app, since the binary
+    /// itself is buried in COMET.app/Contents/MacOS. Run from source, it is the
+    /// build output folder.
+    /// </summary>
+    public static string AppFolder
+    {
+        get
+        {
+            string baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            const string bundleTail = "/Contents/MacOS";
+            if (baseDir.EndsWith(bundleTail, StringComparison.Ordinal))
+            {
+                string bundle = baseDir.Substring(0, baseDir.Length - bundleTail.Length);
+                if (bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+                    return Path.GetDirectoryName(bundle) ?? baseDir;
+            }
+            return baseDir;
+        }
+    }
+
+    [RelayCommand]
+    public void OpenContainingFolder()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("/usr/bin/open", new[] { AppFolder }) { UseShellExecute = false });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Could not open {AppFolder}: {ex.Message}", isError: true);
+        }
+    }
+
+    /// <summary>The A, B, C, D buttons in the header.</summary>
+    public QuickLoadSlot[] QuickLoadSlots { get; } =
+        { new("A"), new("B"), new("C"), new("D") };
+
+    /// <summary>Called when the window comes forward, so files added in Finder light their button.</summary>
+    public void RefreshQuickLoadSlots()
+    {
+        foreach (var slot in QuickLoadSlots) slot.Refresh(CurrentHistoryFile);
+    }
+
+    [RelayCommand]
+    private void LoadQuickSlot(QuickLoadSlot slot)
+    {
+        slot.Refresh(CurrentHistoryFile);
+        if (!slot.Exists)
+        {
+            SetStatus($"{slot.FileName} not found. Put it in {AppFolder} to use button {slot.Letter}.", isError: true);
+            return;
+        }
+        LoadHistoryFile(slot.FilePath, replaceExisting: true);
+    }
+
+    /// <summary>Command files offered under Load Commands.</summary>
+    public IReadOnlyList<string> FindCommandFiles() => CommandFileFinder.Find(AppFolder);
 
     #endregion
 
@@ -558,11 +730,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 History.Add(entry);
             }
             CurrentHistoryFile = path;
-            AppendSystemMessage($"Loaded {entries.Count} command(s) from {Path.GetFileName(path)}");
+            SetStatus($"Loaded {entries.Count} command(s) from {Path.GetFileName(path)}");
         }
         catch (Exception ex)
         {
-            AppendSystemMessage($"Could not load {path}: {ex.Message}");
+            SetStatus($"Could not load {path}: {ex.Message}", isError: true);
         }
     }
 
@@ -572,11 +744,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         {
             HistoryFile.Save(path, History);
             CurrentHistoryFile = path;
-            AppendSystemMessage($"Saved {History.Count} command(s) to {Path.GetFileName(path)}");
+            SetStatus($"Saved {History.Count} command(s) to {Path.GetFileName(path)}");
         }
         catch (Exception ex)
         {
-            AppendSystemMessage($"Could not save {path}: {ex.Message}");
+            SetStatus($"Could not save {path}: {ex.Message}", isError: true);
         }
     }
 
@@ -605,7 +777,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             History.Add(entry);
         }
 
-        AppendSystemMessage("Loaded 9 command(s) from raptor.ButtonA.txt");
+        SetStatus("Loaded 9 command(s) from raptor.ButtonA.txt");
         TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
             "AT+CSQ" + Environment.NewLine, TerminalTextKind.Sent));
         TerminalTextAppended?.Invoke(this, new TerminalTextEventArgs(
@@ -618,25 +790,36 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        scriptCancellation?.Cancel();
         portManager.Dispose();
     }
 }
 
+/// <summary>
+/// The terminal only ever shows wire traffic. Status and errors go to the
+/// footer through StatusMessage, so there is deliberately no third kind here.
+/// </summary>
 public enum TerminalTextKind
 {
     Received,
-    Sent,
-    System
+    Sent
 }
 
 public sealed class TerminalTextEventArgs : EventArgs
 {
-    public TerminalTextEventArgs(string text, TerminalTextKind kind)
+    public TerminalTextEventArgs(string text, TerminalTextKind kind, DateTime? time = null)
     {
         Text = text;
         Kind = kind;
+        Time = time ?? DateTime.Now;
     }
 
     public string Text { get; }
     public TerminalTextKind Kind { get; }
+
+    /// <summary>
+    /// When the text arrived, taken here rather than when the UI thread draws it.
+    /// Always recorded; the timestamp toggle only decides whether it is shown.
+    /// </summary>
+    public DateTime Time { get; }
 }
