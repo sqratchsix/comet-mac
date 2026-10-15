@@ -12,9 +12,9 @@ namespace Comet.Core;
 /// command as its own description. A blank line toggles the button shade, which
 /// is how the command files in the COMMANDS folder group related commands.
 ///
-/// Lines beginning with ** are script markers. Parsing keeps them intact and
-/// tags the entry as a script so nothing is lost on a load/save round trip,
-/// even though running scripts is not wired up in this build yet.
+/// A **script line opens and closes a script button; the lines between are its
+/// body, kept verbatim and run by <see cref="ScriptRunner"/> through
+/// <see cref="Script.FromLines"/>.
 /// </summary>
 public static class HistoryFile
 {
