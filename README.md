@@ -138,23 +138,32 @@ Drop a `.txt` file or a folder of them onto the window to load its commands.
 
 Working:
 
-- Port discovery with friendly USB device names, and a refresh button
+- Port discovery with friendly USB device names and a refresh button; paired Bluetooth
+  ports are hidden
+- Quectel and similar modems: their USB AT ports are listed and opened through libusb,
+  with no driver to install
 - Open and close, with baud, parity, data bits and stop bits; any baud rate can be typed
-- Terminal send and receive, colour coded for sent and received, with selectable text
-- ASCII and HEX modes, byte spacing, configurable timestamps
-- CR and NL write options, read line breaking
-- DTR, RTS and send break
-- History buttons: click to resend, right click to copy or remove, command/description
-  toggle, alternating shades from the file's grouping
+- Terminal send and receive, colour coded, with per-line timestamps that can be shown
+  or hidden at any time; status messages go to the footer, never the terminal
+- ASCII and HEX modes, byte spacing, CR and NL write options, read line breaking
+- DTR (on by default), RTS and send break
+- Smart buttons that build up from the bottom as commands are sent; A, B, C and D load
+  `ButtonA.txt` to `ButtonD.txt`; Load Commands lists the command files beside the app
+- Script buttons: run, stop, a step editor with a text view, and a Script Commands table
 - Load, append and save history files; drag and drop; reveal in Finder
+- Several windows, each on its own port
+- Right-click menus on the terminal, the smart button panel and the window
 - Command recall in the input box with the up and down arrows
-- macOS menu bar with the usual shortcuts
 
 Not ported yet, all present in the Windows build:
 
-- Script runner. Script blocks in history files are parsed and round trip through save
-  without loss, and they appear as buttons, but clicking one does not run it yet.
 - XModem and YModem transfer (`Transfer.cs` in the original)
 - ToolBox, Convertor and the response analyzer windows
-- Multiple windows against several ports at once
-- Auto-loading `COMET.ini` and the A/B/C/D button files at startup
+- Open All Ports, Tile and Close Other Instances
+- The dialog for editing a command button
+- Auto-loading `COMET.ini` at startup
+
+## License
+
+MIT, see [LICENSE](LICENSE). Free to use, change and redistribute, including in
+commercial products, as long as the copyright notice and licence travel with it.
